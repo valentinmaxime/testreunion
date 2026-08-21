@@ -493,8 +493,11 @@
                 color: "#e74c3c",
                 points: [
                     { name: "Aéroport St-Denis (Départ 9h10)", lat: -20.8915972, lng: 55.512241, icon: redIcon },
+                    { name: "Distillerie Savanna (Ste-Suzanne)", lat: -20.9161837, lng: 55.6377667, icon: redIcon },
                     { name: "Cascade Bassin Bœuf", lat: -20.949167, lng: 55.583611, icon: redIcon },
+                    { name: "Temple du Colosse (St-André)", lat: -20.9367287, lng: 55.6716746, icon: redIcon },
                     { name: "Resto La Cascade Blanche", lat: -20.9993595, lng: 55.5794508, icon: restaurantIcon },
+                    { name: "Cascade Voile de la Mariée (Rando 1h30 AR)", lat: -21.0398724, lng: 55.5380261, icon: hikingIcon },
                     { name: "Gîte Le Guétali (Grand Îlet)", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
@@ -525,8 +528,12 @@
                 points: [
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon },
                     { name: "Belvédère Takamaka", lat: -21.0770796, lng: 55.6319329, icon: orangeIcon },
+                    { name: "Pont Suspendu Rivière de l'Est", lat: -21.1239264, lng: 55.7479361, icon: orangeIcon },
                     { name: "Anse des Cascades (Pause Déj)", lat: -21.1850167, lng: 55.8268239, icon: restaurantIcon },
                     { name: "Coulées de Lave (Grands Brûlés)", lat: -21.2290632, lng: 55.804072, icon: orangeIcon },
+                    { name: "Cap Méchant", lat: -21.3756533, lng: 55.7107871, icon: orangeIcon },
+                    { name: "Puits des Anglais", lat: -21.3692839, lng: 55.7325253, icon: orangeIcon },
+                    { name: "Cascade de la Grande Ravine (Baignade)", lat: -21.3295755, lng: 55.6423992, icon: orangeIcon },
                     { name: "Gîte L'Arbre de Vie (Vincendo)", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -543,6 +550,7 @@
                     { name: "Cascade de Grand Galet", lat: -21.3116237, lng: 55.6418507, icon: violetIcon },
                     { name: "Bourg-Murat / Plaine des Cafres", lat: -21.2012119, lng: 55.5780219, icon: violetIcon },
                     { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.2222188, lng: 55.6894317, icon: hikingIcon, randoLink: RANDO_FOURNAISE },
+                    { name: "Formica Leo (Enclos Fouqué)", lat: -21.223859, lng: 55.692042, icon: violetIcon },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -558,6 +566,8 @@
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
                     { name: "Cirque de Cilaos (Route des 400 virages)", lat: -21.1427529, lng: 55.4639974, icon: greenIcon },
                     { name: "Les Makes (Belvédère de la Fenêtre)", lat: -21.1853877, lng: 55.4330234, icon: greenIcon },
+                    { name: "Observatoire Astronomique des Makes", lat: -21.1997421, lng: 55.4090289, icon: greenIcon },
+                    { name: "Piton Cabri (Rando 4h)", lat: -21.189784, lng: 55.437011, icon: hikingIcon },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -573,6 +583,7 @@
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
                     { name: "Marché Forain de St-Pierre", lat: -21.3399311, lng: 55.4597428, icon: blueIcon },
                     { name: "Saga des Rhums (Isautier)", lat: -21.3123309, lng: 55.4657345, icon: blueIcon },
+                    { name: "Domaine du Café Grillé", lat: -21.306886, lng: 55.423972, icon: blueIcon },
                     { name: "Plage de l'Étang-Salé", lat: -21.2622774, lng: 55.3320837, icon: blueIcon },
                     { name: "Hôtel Le Récif (St-Gilles)", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
@@ -602,6 +613,7 @@
                 color: "#2980b9",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
+                    { name: "Plage de la Saline", lat: -21.0976687, lng: 55.2386044, icon: blueIcon },
                     { name: "Jardin d'Éden", lat: -21.0771788, lng: 55.2289407, icon: blueIcon },
                     { name: "Saint-Leu (Front de mer & Parapente)", lat: -21.151484, lng: 55.278727, icon: blueIcon },
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
@@ -1120,7 +1132,14 @@
                 }).addTo(highlightLayer);
             });
 
-            map.flyTo(data.center, data.zoom, { duration: 1.0 });
+            // Cadrage automatique sur tous les points du jour (au lieu d'un centre/zoom fixe),
+            // pour qu'un point excentré (ex. un détour avant l'étape principale) reste toujours visible.
+            if (data.points.length > 0) {
+                var bounds = L.latLngBounds(data.points.map(p => [p.lat, p.lng]));
+                map.flyToBounds(bounds, { padding: [50, 50], maxZoom: data.zoom, duration: 1.0 });
+            } else {
+                map.flyTo(data.center, data.zoom, { duration: 1.0 });
+            }
 
             // Météo du jour : observée / prévision / normale saisonnière selon la proximité de la date
             fetchDayWeather(data.center[0], data.center[1], data.date).then(function(w) {
