@@ -274,6 +274,75 @@
         .nav-btn:hover { background: #d5dbdb; }
         .nav-btn:disabled { opacity: 0.4; cursor: default; }
 
+        /* Compte à rebours avant le départ */
+        .countdown-badge {
+            background: linear-gradient(135deg, #8e44ad, #3498db);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .countdown-badge.visible { display: block; }
+
+        /* Bouton Vue d'ensemble */
+        .overview-btn {
+            width: 100%;
+            background: #34495e;
+            color: white;
+            border: none;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            margin: 8px 0;
+            transition: background 0.2s;
+        }
+        .overview-btn:hover { background: #2c3e50; }
+        .overview-btn.active { background: #e67e22; }
+
+        /* Bouton Imprimer / PDF */
+        .print-btn {
+            width: 100%;
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: 1px solid #d5dbdb;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+        .print-btn:hover { background: #d5dbdb; }
+
+        /* Vue imprimable : cachée à l'écran, affichée uniquement à l'impression */
+        #printView { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #printView, #printView * { visibility: visible; }
+            #printView {
+                display: block;
+                position: absolute;
+                top: 0; left: 0;
+                width: 100%;
+                padding: 20px;
+                font-family: Arial, sans-serif;
+                color: #000;
+            }
+            #printView h1 { font-size: 20px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+            #printView .print-day { margin-top: 16px; page-break-inside: avoid; }
+            #printView .print-day-title { font-size: 14px; font-weight: bold; color: #2c3e50; }
+            #printView .print-day-theme { font-size: 11px; color: #666; margin-bottom: 4px; }
+            #printView ul { margin: 4px 0; padding-left: 20px; font-size: 12px; }
+            #printView li.on-foot { font-style: italic; color: #555; }
+        }
+
         /* Adaptation mobile */
         @media (max-width: 480px) {
             .sidebar {
@@ -299,6 +368,8 @@
             <button class="close-btn" id="closeBtn">&times;</button>
         </div>
 
+        <div class="countdown-badge" id="countdownBadge"></div>
+
         <div class="trip-summary" id="tripSummary">
             <div class="trip-summary-item" id="summaryDays">📅 <i>calcul...</i></div>
             <div class="trip-summary-item" id="summaryHikes">🥾 <i>calcul...</i></div>
@@ -313,6 +384,7 @@
                 <button class="play-btn" id="playBtn">▶ Jouer</button>
                 <button class="nav-btn" id="nextBtn" title="Jour suivant">▶</button>
             </div>
+            <button class="overview-btn" id="overviewBtn">🗺️ Vue d'ensemble (tous les trajets)</button>
             <input type="range" class="timeline-slider" id="timeSlider" min="0" max="0" value="0" step="1">
             <div class="current-day-badge" id="dayBadge">J1 - Lundi 28/09</div>
 
@@ -334,6 +406,8 @@
             <label class="filter-item"><input type="checkbox" id="toggleResto" checked> 🍽️ Restaurants & Halte gourmande</label>
             <label class="filter-item"><input type="checkbox" id="toggleSausage" checked> 🌭 Saucisse & Gastronomie traditionnelle</label>
         </div>
+
+        <button class="print-btn" id="printBtn">🖨️ Imprimer / Exporter en PDF</button>
 
         <div class="section-title">🗓️ Légende des étapes & icônes</div>
         <div class="legend-box">
@@ -1105,6 +1179,10 @@
             index = parseInt(index);
             var myToken = ++selectionToken;
 
+            if (typeof overviewMode !== 'undefined' && overviewMode) {
+                exitOverview();
+            }
+
             timeSlider.value = index;
             var data = timelineData[index];
             dayBadge.innerText = `${data.day}`;
@@ -1278,12 +1356,118 @@
             if(e.target.checked) map.addLayer(allSausageLayer); else map.removeLayer(allSausageLayer);
         });
 
+        // Compte à rebours avant le départ / statut du voyage
+        function updateCountdown() {
+            var todayStr = new Date().toISOString().substring(0, 10);
+            var firstDate = timelineData[0].date;
+            var lastDate = timelineData[timelineData.length - 1].date;
+            var diffToStart = Math.round((new Date(firstDate + "T00:00:00") - new Date(todayStr + "T00:00:00")) / 86400000);
+            var diffToEnd = Math.round((new Date(lastDate + "T00:00:00") - new Date(todayStr + "T00:00:00")) / 86400000);
+
+            var badge = document.getElementById('countdownBadge');
+            if (diffToStart > 0) {
+                badge.innerHTML = `✈️ Départ dans <b>${diffToStart}</b> jour${diffToStart > 1 ? 's' : ''}`;
+            } else if (diffToEnd >= 0) {
+                var todayIdx = timelineData.findIndex(d => d.date === todayStr);
+                badge.innerHTML = todayIdx >= 0
+                    ? `🌴 En voyage — ${timelineData[todayIdx].day}`
+                    : `🌴 En voyage`;
+            } else {
+                badge.innerHTML = `✅ Voyage terminé`;
+            }
+            badge.classList.add('visible');
+        }
+
+        // Sélectionne automatiquement le jour du voyage correspondant à la date du jour
+        function getInitialDayIndex() {
+            var todayStr = new Date().toISOString().substring(0, 10);
+            var idx = timelineData.findIndex(d => d.date === todayStr);
+            return idx >= 0 ? idx : 0;
+        }
+
+        // Vue d'ensemble : superpose les trajets de tous les jours sur la carte
+        var overviewRouteLayer = L.layerGroup();
+        var overviewMode = false;
+        var overviewBtn = document.getElementById('overviewBtn');
+
+        function exitOverview() {
+            overviewMode = false;
+            overviewBtn.classList.remove('active');
+            overviewBtn.innerText = "🗺️ Vue d'ensemble (tous les trajets)";
+            map.removeLayer(overviewRouteLayer);
+        }
+
+        async function toggleOverview() {
+            if (overviewMode) {
+                exitOverview();
+                selectDay(parseInt(timeSlider.value));
+                return;
+            }
+
+            overviewMode = true;
+            overviewBtn.classList.add('active');
+            overviewBtn.innerText = "❌ Quitter la vue d'ensemble";
+            map.removeLayer(activeRouteLayer);
+            overviewRouteLayer.clearLayers();
+
+            for (var i = 0; i < timelineData.length; i++) {
+                var d = timelineData[i];
+                var drivablePoints = d.points.filter(p => !p.onFoot);
+                if (drivablePoints.length < 2) continue;
+                var routeData = routeCache[i];
+                if (!routeData) {
+                    routeData = await fetchOSRMRoute(drivablePoints);
+                    routeCache[i] = routeData;
+                }
+                if (!overviewMode) return; // l'utilisateur a quitté la vue entre-temps
+                if (routeData) {
+                    var latLngs = routeData.geometry.coordinates.map(c => [c[1], c[0]]);
+                    L.polyline(latLngs, { color: d.color, weight: 4, opacity: 0.75 })
+                        .bindPopup(`<b>${d.day}</b> — ${d.title}`)
+                        .addTo(overviewRouteLayer);
+                }
+            }
+
+            if (!overviewMode) return;
+            map.addLayer(overviewRouteLayer);
+            var allLatLngs = [];
+            timelineData.forEach(d => d.points.forEach(p => allLatLngs.push([p.lat, p.lng])));
+            map.flyToBounds(L.latLngBounds(allLatLngs), { padding: [40, 40], duration: 1.0 });
+        }
+
+        overviewBtn.addEventListener('click', toggleOverview);
+
+        // Vue imprimable / export PDF : génère une feuille de route texte complète
+        function renderPrintView() {
+            var html = `<h1>🧭 Voyage Réunion & Maurice — Feuille de route</h1>`;
+            timelineData.forEach(function(d) {
+                html += `<div class="print-day">`;
+                html += `<div class="print-day-title">${d.day} — ${d.title}</div>`;
+                html += `<div class="print-day-theme">${d.theme}</div>`;
+                html += `<ul>`;
+                d.points.forEach(function(p) {
+                    var footTag = p.onFoot ? ' (accessible à pied uniquement)' : '';
+                    html += `<li${p.onFoot ? ' class="on-foot"' : ''}>${p.name}${footTag}</li>`;
+                });
+                html += `</ul></div>`;
+            });
+            document.getElementById('printView').innerHTML = html;
+        }
+
+        document.getElementById('printBtn').addEventListener('click', function() {
+            renderPrintView();
+            window.print();
+        });
+
         // Chargement initial
-        selectDay(0);
+        selectDay(getInitialDayIndex());
         computeTripSummary();
         computeHikeCount();
         computeDayCount();
         renderLegendDates();
+        updateCountdown();
     </script>
+    <div id="printView"></div>
+
 </body>
 </html>
