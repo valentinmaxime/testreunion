@@ -726,10 +726,17 @@
         }
 
         function getGoogleMapsBtn(lat, lng, name) {
-            // Format "place" avec le nom du lieu : ouvre la fiche réelle (avis, horaires...)
-            // plutôt qu'un simple pin GPS anonyme obtenu avec des coordonnées seules.
-            var label = name ? encodeURIComponent(name) : `${lat},${lng}`;
-            return `<a class="gmaps-btn" href="https://www.google.com/maps/place/${label}/@${lat},${lng},17z" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
+            // Recherche texte (fiable, ne dépend pas d'une correspondance exacte) plutôt que
+            // le format /place/ qui échoue si le nom ne matche pas exactement un lieu Google.
+            // On retire les précisions entre parenthèses ("Départ 9h10", "Pause Déj"...) qui ne
+            // sont pas de vrais noms de lieux, et on ajoute la région pour bien cibler le résultat.
+            if (name) {
+                var cleanName = name.replace(/\s*\([^)]*\)/g, '').trim();
+                var region = lng < 56 ? 'La Réunion' : 'Île Maurice';
+                var query = `${cleanName}, ${region}`;
+                return `<a class="gmaps-btn" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
+            }
+            return `<a class="gmaps-btn" href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
         }
 
         function getRandoBtn(randoLink) {
