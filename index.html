@@ -336,12 +336,7 @@
 
         <div class="section-title">🗓️ Légende des étapes & icônes</div>
         <div class="legend-box">
-            <div><span class="legend-color" style="background: #e74c3c;"></span> <b>28/09 - 29/09</b>: Salazie & Mafate</div>
-            <div><span class="legend-color" style="background: #e67e22;"></span> <b>30/09</b>: Sud Sauvage</div>
-            <div><span class="legend-color" style="background: #8e44ad;"></span> <b>01/10</b>: Piton de la Fournaise</div>
-            <div><span class="legend-color" style="background: #27ae60;"></span> <b>02/10</b>: Cilaos & Les Makes</div>
-            <div><span class="legend-color" style="background: #2980b9;"></span> <b>03/10 - 08/10</b>: Côte Ouest & Maïdo</div>
-            <div><span class="legend-color" style="background: #f1c40f;"></span> <b>08/10 - 10/10</b>: Île Maurice</div>
+            <div id="legendDates"></div>
             <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
             <div><img src="https://img.icons8.com/color/48/000000/home--v1.png" class="legend-icon"> Gîtes / Hébergements</div>
             <div><img src="https://img.icons8.com/color/48/000000/restaurant.png" class="legend-icon"> Restaurants</div>
@@ -491,6 +486,7 @@
             {
                 day: "J1 - Lundi 28/09",
                 date: "2026-09-28",
+                theme: "Salazie & Mafate",
                 title: "Arrivée St-Denis ➔ Cirque de Salazie ➔ Gîte Grand Îlet",
                 center: [-21.026, 55.551],
                 zoom: 11,
@@ -506,6 +502,7 @@
             {
                 day: "J2 - Mardi 29/09",
                 date: "2026-09-29",
+                theme: "Salazie & Mafate",
                 title: "Gîte Grand Îlet ➔ Rando Mafate ➔ Gîte Grand Îlet",
                 center: [-21.060, 55.460],
                 zoom: 12,
@@ -520,6 +517,7 @@
             {
                 day: "J3 - Mercredi 30/09",
                 date: "2026-09-30",
+                theme: "Sud Sauvage",
                 title: "Gîte Grand Îlet ➔ Sud Sauvage ➔ Gîte Vincendo",
                 center: [-21.210, 55.740],
                 zoom: 10,
@@ -535,6 +533,7 @@
             {
                 day: "J4 - Jeudi 01/10",
                 date: "2026-10-01",
+                theme: "Piton de la Fournaise",
                 title: "Gîte Vincendo ➔ Cascade de Grand Galet ➔ Piton de la Fournaise ➔ Gîte Vincendo",
                 center: [-21.260, 55.620],
                 zoom: 11,
@@ -550,6 +549,7 @@
             {
                 day: "J5 - Vendredi 02/10",
                 date: "2026-10-02",
+                theme: "Cilaos & Les Makes",
                 title: "Gîte Vincendo ➔ Cirque de Cilaos ➔ Les Makes ➔ Gîte Vincendo",
                 center: [-21.200, 55.480],
                 zoom: 11,
@@ -564,6 +564,7 @@
             {
                 day: "J6 - Samedi 03/10",
                 date: "2026-10-03",
+                theme: "Côte Ouest & Maïdo",
                 title: "Gîte Vincendo ➔ St-Pierre ➔ Hôtel Le Récif (St-Gilles)",
                 center: [-21.220, 55.350],
                 zoom: 11,
@@ -579,6 +580,7 @@
             {
                 day: "J7 - Dimanche 04/10",
                 date: "2026-10-04",
+                theme: "Côte Ouest & Maïdo",
                 title: "Hôtel St-Gilles ➔ Piton Maïdo ➔ ULM Cambaie ➔ Hôtel",
                 center: [-21.030, 55.300],
                 zoom: 11,
@@ -593,6 +595,7 @@
             {
                 day: "J8 - Lundi 05/10",
                 date: "2026-10-05",
+                theme: "Côte Ouest & Maïdo",
                 title: "Hôtel St-Gilles ➔ Jardin d'Éden ➔ St-Leu ➔ Hôtel",
                 center: [-21.100, 55.250],
                 zoom: 12,
@@ -607,6 +610,7 @@
             {
                 day: "J9 - Mardi 06/10",
                 date: "2026-10-06",
+                theme: "Côte Ouest & Maïdo",
                 title: "Journée Détente Lagon & Côte Ouest",
                 center: [-21.066, 55.224],
                 zoom: 13,
@@ -618,6 +622,7 @@
             {
                 day: "J10 - Mercredi 07/10",
                 date: "2026-10-07",
+                theme: "Côte Ouest & Maïdo",
                 title: "Hôtel ➔ Cap Noir (Dos d'Âne) ➔ Boucan Canot ➔ Hôtel",
                 center: [-21.020, 55.300],
                 zoom: 12,
@@ -632,6 +637,7 @@
             {
                 day: "J11 - Jeudi 08/10",
                 date: "2026-10-08",
+                theme: "Île Maurice",
                 title: "Hôtel St-Gilles ➔ Aéroport St-Denis ➔ Hôtel Maurice",
                 center: [-20.500, 56.500],
                 zoom: 9,
@@ -645,6 +651,7 @@
             {
                 day: "J12 - Vendredi 09/10",
                 date: "2026-10-09",
+                theme: "Île Maurice",
                 title: "Hôtel Grand Baie ➔ Château Labourdonnais ➔ Hôtel",
                 center: [-20.040, 57.570],
                 zoom: 12,
@@ -658,6 +665,7 @@
             {
                 day: "J13 - Samedi 10/10",
                 date: "2026-10-10",
+                theme: "Île Maurice",
                 title: "Hôtel Grand Baie ➔ Jardin Pamplemousses & Sucre ➔ Hôtel",
                 center: [-20.060, 57.580],
                 zoom: 12,
@@ -751,6 +759,17 @@
         }
 
         // 1. Afficher TOUS LES POINTS du séjour dès le départ
+        // On regroupe d'abord les jours par point (un gîte utilisé 3 jours doit afficher les 3, pas juste le premier)
+        var pointDaysMap = {};
+        timelineData.forEach(function(d) {
+            d.points.forEach(function(pt) {
+                var key = `${pt.lat.toFixed(4)}_${pt.lng.toFixed(4)}`;
+                if (!pointDaysMap[key]) pointDaysMap[key] = [];
+                var shortDay = d.day.split(' - ')[0]; // "J1 - Lundi 28/09" → "J1"
+                if (pointDaysMap[key].indexOf(shortDay) === -1) pointDaysMap[key].push(shortDay);
+            });
+        });
+
         var addedPointsKeys = new Set();
 
         timelineData.forEach(function(d) {
@@ -759,7 +778,8 @@
                 
                 if (!addedPointsKeys.has(key)) {
                     addedPointsKeys.add(key);
-                    var popupContent = `<b>${d.day}</b><br>📍 <b>${pt.name}</b>${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
+                    var daysLabel = pointDaysMap[key].join(', ');
+                    var popupContent = `<b>${daysLabel}</b><br>📍 <b>${pt.name}</b>${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
                     var marker = L.marker([pt.lat, pt.lng], { icon: pt.icon })
                         .bindPopup(popupContent);
 
@@ -822,6 +842,36 @@
         var summaryDaysEl = document.getElementById('summaryDays');
         function computeDayCount() {
             summaryDaysEl.innerHTML = `📅 <b>${timelineData.length}</b> jours`;
+        }
+
+        // Génère la légende des dates/couleurs à partir de timelineData (regroupe les jours
+        // consécutifs de même couleur/thème), pour qu'elle ne puisse jamais se désynchroniser.
+        function formatDDMM(isoDate) {
+            var parts = isoDate.split('-');
+            return `${parts[2]}/${parts[1]}`;
+        }
+
+        function renderLegendDates() {
+            var groups = [];
+            var current = null;
+
+            timelineData.forEach(function(d) {
+                if (!current || current.color !== d.color || current.theme !== d.theme) {
+                    if (current) groups.push(current);
+                    current = { color: d.color, theme: d.theme, startDate: d.date, endDate: d.date };
+                } else {
+                    current.endDate = d.date;
+                }
+            });
+            if (current) groups.push(current);
+
+            var container = document.getElementById('legendDates');
+            container.innerHTML = groups.map(function(g) {
+                var dateLabel = g.startDate === g.endDate
+                    ? formatDDMM(g.startDate)
+                    : `${formatDDMM(g.startDate)} - ${formatDDMM(g.endDate)}`;
+                return `<div><span class="legend-color" style="background: ${g.color};"></span> <b>${dateLabel}</b>: ${g.theme}</div>`;
+            }).join('');
         }
 
         async function computeTripSummary() {
@@ -1205,6 +1255,7 @@
         computeTripSummary();
         computeHikeCount();
         computeDayCount();
+        renderLegendDates();
     </script>
 </body>
 </html>
