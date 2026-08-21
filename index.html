@@ -722,7 +722,7 @@
                     { name: "Plage de Boucan Canot", lat: -21.0277948, lng: 55.2259182, icon: blueIcon },
                     { name: "Saint-Paul (Front de mer)", lat: -21.0082928, lng: 55.2694028, icon: blueIcon },
                     { name: "Aéroport Roland Garros (Départ 13h15)", lat: -20.8915972, lng: 55.512241, icon: blueIcon },
-                    { name: "Hôtel Veranda Grand Baie (Maurice, arrivée 14h)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
+                    { name: "Hôtel Veranda Grand Baie (Maurice, arrivée 14h)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon, flight: true }
                 ]
             },
             {
@@ -970,7 +970,7 @@
 
             for (var i = 0; i < timelineData.length; i++) {
                 var d = timelineData[i];
-                var drivablePoints = d.points.filter(p => !p.onFoot);
+                var drivablePoints = d.points.filter(p => !p.onFoot && !p.flight);
                 if (drivablePoints.length < 2) continue;
                 var routeData = routeCache[i];
                 if (!routeData) {
@@ -1243,8 +1243,9 @@
                 }
             });
 
-            var drivablePoints = data.points.filter(p => !p.onFoot);
+            var drivablePoints = data.points.filter(p => !p.onFoot && !p.flight);
             var footPoints = data.points.filter(p => p.onFoot);
+            var flightPoints = data.points.filter(p => p.flight);
 
             if (drivablePoints.length >= 2) {
                 var routeData = routeCache[index];
@@ -1270,7 +1271,8 @@
                     var timeStr = h > 0 ? `${h}h${m < 10 ? '0' : ''}${m}` : `${m} min`;
 
                     var footNote = footPoints.length > 0 ? `<br>🥾 <i>+ portion(s) accessible(s) uniquement à pied</i>` : '';
-                    routeBadge.innerHTML = `🚗 <b>Trajet du jour :</b> ${km} km<br>⏱️ <b>Temps de conduite estimé :</b> ~${timeStr}${footNote}`;
+                    var flightNote = flightPoints.length > 0 ? `<br>✈️ <i>+ portion(s) en avion</i>` : '';
+                    routeBadge.innerHTML = `🚗 <b>Trajet du jour :</b> ${km} km<br>⏱️ <b>Temps de conduite estimé :</b> ~${timeStr}${footNote}${flightNote}`;
                     polyline.bindPopup(`<b>${data.day}</b><br>🚗 Distance : ${km} km<br>⏱️ Temps de route : ${timeStr}`);
                 } else {
                     routeBadge.innerHTML = `⚠️ Trajet routier non disponible.`;
@@ -1412,7 +1414,7 @@
 
             for (var i = 0; i < timelineData.length; i++) {
                 var d = timelineData[i];
-                var drivablePoints = d.points.filter(p => !p.onFoot);
+                var drivablePoints = d.points.filter(p => !p.onFoot && !p.flight);
                 if (drivablePoints.length < 2) continue;
                 var routeData = routeCache[i];
                 if (!routeData) {
