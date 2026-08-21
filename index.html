@@ -497,7 +497,7 @@
                     { name: "Cascade Bassin Bœuf", lat: -20.949167, lng: 55.583611, icon: redIcon },
                     { name: "Temple du Colosse (St-André)", lat: -20.9367287, lng: 55.6716746, icon: redIcon },
                     { name: "Resto La Cascade Blanche", lat: -20.9993595, lng: 55.5794508, icon: restaurantIcon },
-                    { name: "Cascade Voile de la Mariée (Rando 1h30 AR)", lat: -21.0398724, lng: 55.5380261, icon: hikingIcon },
+                    { name: "Cascade Voile de la Mariée (Rando 1h30 AR)", lat: -21.0398724, lng: 55.5380261, icon: hikingIcon, onFoot: true },
                     { name: "Gîte Le Guétali (Grand Îlet)", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
@@ -513,7 +513,7 @@
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon },
                     { name: "Hell-Bourg (Musée Musique)", lat: -21.0637609, lng: 55.5186291, icon: redIcon },
                     { name: "Col des Bœufs (Parking Rando)", lat: -21.0712355, lng: 55.448285, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
-                    { name: "La Nouvelle (Mafate - Rando)", lat: -21.0749944, lng: 55.4229356, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
+                    { name: "La Nouvelle (Mafate - Rando)", lat: -21.0749944, lng: 55.4229356, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS, onFoot: true },
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
@@ -567,7 +567,7 @@
                     { name: "Cirque de Cilaos (Route des 400 virages)", lat: -21.1427529, lng: 55.4639974, icon: greenIcon },
                     { name: "Les Makes (Belvédère de la Fenêtre)", lat: -21.1853877, lng: 55.4330234, icon: greenIcon },
                     { name: "Observatoire Astronomique des Makes", lat: -21.1997421, lng: 55.4090289, icon: greenIcon },
-                    { name: "Piton Cabri (Rando 4h)", lat: -21.189784, lng: 55.437011, icon: hikingIcon },
+                    { name: "Piton Cabri (Rando 4h)", lat: -21.189784, lng: 55.437011, icon: hikingIcon, onFoot: true },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -894,10 +894,11 @@
 
             for (var i = 0; i < timelineData.length; i++) {
                 var d = timelineData[i];
-                if (d.points.length < 2) continue;
+                var drivablePoints = d.points.filter(p => !p.onFoot);
+                if (drivablePoints.length < 2) continue;
                 var routeData = routeCache[i];
                 if (!routeData) {
-                    routeData = await fetchOSRMRoute(d.points);
+                    routeData = await fetchOSRMRoute(drivablePoints);
                     routeCache[i] = routeData;
                 }
                 if (routeData) {
@@ -1162,10 +1163,13 @@
                 }
             });
 
-            if (data.points.length >= 2) {
+            var drivablePoints = data.points.filter(p => !p.onFoot);
+            var footPoints = data.points.filter(p => p.onFoot);
+
+            if (drivablePoints.length >= 2) {
                 var routeData = routeCache[index];
                 if (!routeData) {
-                    routeData = await fetchOSRMRoute(data.points);
+                    routeData = await fetchOSRMRoute(drivablePoints);
                     routeCache[index] = routeData;
                 }
 
@@ -1185,7 +1189,8 @@
                     var m = durationMinutes % 60;
                     var timeStr = h > 0 ? `${h}h${m < 10 ? '0' : ''}${m}` : `${m} min`;
 
-                    routeBadge.innerHTML = `🚗 <b>Trajet du jour :</b> ${km} km<br>⏱️ <b>Temps de conduite estimé :</b> ~${timeStr}`;
+                    var footNote = footPoints.length > 0 ? `<br>🥾 <i>+ portion(s) accessible(s) uniquement à pied</i>` : '';
+                    routeBadge.innerHTML = `🚗 <b>Trajet du jour :</b> ${km} km<br>⏱️ <b>Temps de conduite estimé :</b> ~${timeStr}${footNote}`;
                     polyline.bindPopup(`<b>${data.day}</b><br>🚗 Distance : ${km} km<br>⏱️ Temps de route : ${timeStr}`);
                 } else {
                     routeBadge.innerHTML = `⚠️ Trajet routier non disponible.`;
