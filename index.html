@@ -115,6 +115,25 @@
             line-height: 1.4;
         }
 
+        .weather-sun-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .weather-badge, .sun-badge {
+            flex: 1;
+            background: #16a085;
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+        .sun-badge {
+            background: #f39c12;
+        }
+
         .timeline-list {
             list-style: none;
             padding: 0;
@@ -155,6 +174,66 @@
         .legend-box { font-size: 12px; line-height: 1.8; margin-top: 10px; }
         .legend-color { width: 12px; height: 12px; display: inline-block; border-radius: 3px; vertical-align: middle; margin-right: 5px; }
         .legend-icon { width: 18px; height: 18px; vertical-align: middle; margin-right: 5px; }
+
+        /* Style du bouton Waze dans les popups */
+        .waze-btn {
+            display: inline-block;
+            margin-top: 8px;
+            margin-right: 6px;
+            padding: 5px 10px;
+            background-color: #33ccff;
+            color: #111;
+            font-weight: bold;
+            font-size: 12px;
+            text-decoration: none;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+        }
+        .waze-btn:hover {
+            background-color: #25b3e6;
+            color: #000;
+        }
+
+        /* Style du bouton Google Maps dans les popups */
+        .gmaps-btn {
+            display: inline-block;
+            margin-top: 8px;
+            margin-right: 6px;
+            padding: 5px 10px;
+            background-color: #4285F4;
+            color: #fff;
+            font-weight: bold;
+            font-size: 12px;
+            text-decoration: none;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+        }
+        .gmaps-btn:hover {
+            background-color: #3367d6;
+            color: #fff;
+        }
+
+        /* Style du bouton Randonnée (Visorando / Randopitons) dans les popups */
+        .rando-btn {
+            display: inline-block;
+            margin-top: 8px;
+            margin-right: 6px;
+            padding: 5px 10px;
+            background-color: #27ae60;
+            color: #fff;
+            font-weight: bold;
+            font-size: 12px;
+            text-decoration: none;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+        }
+        .rando-btn:hover {
+            background-color: #1e8449;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -174,6 +253,12 @@
                 <input type="range" class="timeline-slider" id="timeSlider" min="0" max="12" value="0" step="1">
             </div>
             <div class="current-day-badge" id="dayBadge">J1 - Lundi 28/09</div>
+
+            <div class="weather-sun-row">
+                <div class="weather-badge" id="weatherBadge">⏳ Météo...</div>
+                <div class="sun-badge" id="sunBadge">⏳ Soleil...</div>
+            </div>
+
             <div class="route-info-badge" id="routeBadge">Calcul du trajet en cours...</div>
 
             <ul class="timeline-list" id="timelineList"></ul>
@@ -185,7 +270,7 @@
             <label class="filter-item"><input type="checkbox" id="toggleRoutes" checked> 🛣️ Trajet routier du jour</label>
             <label class="filter-item"><input type="checkbox" id="toggleAcc" checked> 🏠 Gîtes & Hébergements</label>
             <label class="filter-item"><input type="checkbox" id="toggleResto" checked> 🍽️ Restaurants & Halte gourmande</label>
-            <label class="filter-item"><input type="checkbox" id="toggleSausage" checked> 🌭 Saucisse & Gastronomie traditionnelle</label>
+            <label class="filter-item"><input type="checkbox" id="toggleSausage" checked> 🌭 Rougail Saucisse</label>
         </div>
 
         <div class="section-title">🗓️ Légende des étapes & icônes</div>
@@ -201,10 +286,19 @@
             <div><img src="https://img.icons8.com/color/48/000000/restaurant.png" class="legend-icon"> Restaurants</div>
             <div>
                 <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18" style="vertical-align: middle;">
-                    <circle cx="32" cy="32" r="30" fill="#d35400"/>
-                    <path d="M 16,36 C 14,22 24,14 36,16 C 46,18 50,30 46,40 C 42,50 28,48 20,42 Z" fill="#c0392b" stroke="#f39c12" stroke-width="2"/>
+                    <circle cx="32" cy="32" r="30" fill="#fdebd0" stroke="#a0522d" stroke-width="2.5"/>
+                    <ellipse cx="30" cy="34" rx="17" ry="8" fill="#8b4a2b" stroke="#5c3018" stroke-width="1.5" transform="rotate(-18 30 34)"/>
+                    <ellipse cx="30" cy="34" rx="17" ry="4" fill="#a9633c" transform="rotate(-18 30 34)"/>
+                    <path d="M44,17 C48,14 53,16 52,21 C51,25 46,26 45,22 C44,20 43,19 44,17 Z" fill="#e74c3c" stroke="#c0392b" stroke-width="1"/>
                 </svg>
-                Saucisse & Gastronomie traditionnelle
+                Rougail Saucisse & Gastronomie traditionnelle
+            </div>
+            <div>
+                <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18" style="vertical-align: middle;">
+                    <circle cx="32" cy="32" r="30" fill="#16a085"/>
+                    <path d="M10,44 L24,20 L31,32 L38,22 L54,44 Z" fill="#ffffff"/>
+                </svg>
+                Points de randonnée (fiche Visorando / Randopitons)
             </div>
         </div>
     </div>
@@ -241,17 +335,42 @@
             iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -30], shadowSize: [32, 32]
         });
 
-        
-        // Icône Saucisse encodée pour Leaflet
-        var rawSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32"><circle cx="32" cy="32" r="30" fill="#d35400" stroke="#ffffff" stroke-width="2"/><path d="M 16,36 C 14,22 24,14 36,16 C 46,18 50,30 46,40 C 42,50 28,48 20,42 Z" fill="#c0392b" stroke="#f39c12" stroke-width="2"/></svg>';
-        var sausageSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(rawSvg);
+        // Icône Rougail Saucisse encodée pour Leaflet (badge + saucisse grillée + piment)
+        var rawSausageSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="36" height="36">
+            <circle cx="32" cy="32" r="30" fill="#fdebd0" stroke="#a0522d" stroke-width="2.5"/>
+            <ellipse cx="30" cy="34" rx="17" ry="8" fill="#8b4a2b" stroke="#5c3018" stroke-width="1.5" transform="rotate(-18 30 34)"/>
+            <ellipse cx="30" cy="34" rx="17" ry="4" fill="#a9633c" transform="rotate(-18 30 34)"/>
+            <path d="M17,29 L20,40 M24,26 L27,38 M31,24 L34,37 M38,23 L41,35" stroke="#5c3018" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M44,17 C48,14 53,16 52,21 C51,25 46,26 45,22 C44,20 43,19 44,17 Z" fill="#e74c3c" stroke="#c0392b" stroke-width="1"/>
+            <path d="M45,17 C44,15 43,13 44,11" stroke="#27ae60" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>`;
+        var sausageSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(rawSausageSvg);
 
         var sausageIcon = L.icon({
             iconUrl: sausageSvg,
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -30], shadowSize: [32, 32]
+            iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -32], shadowSize: [36, 36]
         });
 
+        // Icône Randonnée encodée pour Leaflet (badge + montagne + sentier balisé)
+        var rawHikingSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="36" height="36">
+            <circle cx="32" cy="32" r="30" fill="#16a085" stroke="#ffffff" stroke-width="3"/>
+            <path d="M10,44 L24,20 L31,32 L38,22 L54,44 Z" fill="#ffffff"/>
+            <path d="M24,20 L28,26 L24,32 L20,26 Z" fill="#eafaf1"/>
+            <path d="M38,22 L41,27 L38,32 L35,27 Z" fill="#eafaf1"/>
+            <circle cx="16" cy="46" r="2" fill="#16a085"/>
+            <circle cx="24" cy="42" r="2" fill="#16a085"/>
+            <circle cx="32" cy="46" r="2" fill="#16a085"/>
+            <circle cx="40" cy="42" r="2" fill="#16a085"/>
+            <circle cx="48" cy="46" r="2" fill="#16a085"/>
+        </svg>`;
+        var hikingSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(rawHikingSvg);
+
+        var hikingIcon = L.icon({
+            iconUrl: hikingSvg,
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -32], shadowSize: [36, 36]
+        });
 
         var redIcon = createIcon('red');
         var orangeIcon = createIcon('orange');
@@ -266,10 +385,25 @@
         var HOTEL_RECIF = { name: "Hôtel Le Récif", lat: -21.0667, lng: 55.2241 };
         var HOTEL_VERANDA = { name: "Hôtel Veranda Grand Baie", lat: -20.0125, lng: 57.5812 };
 
+        // Liens de randonnée (Visorando / Randopitons) pour les points concernés
+        var RANDO_COL_BOEUFS = {
+            visorando: "https://www.visorando.com/randonnee-col-des-boeufs-vers-la-nouvelle-et-retou/",
+            randopitons: "https://randopitons.re/randonnee/1271-col-ufs-nouvelle-retour"
+        };
+        var RANDO_CAP_NOIR = {
+            visorando: "https://www.visorando.com/en/walk-roche-verre-bouteille/",
+            randopitons: "https://randopitons.re/randonnee/1402-cap-noir-roche-verre-bouteille-depuis-dos-ane"
+        };
+        var RANDO_FOURNAISE = {
+            visorando: "https://www.visorando.com/en/walk-piton-de-la-fournaise.html",
+            randopitons: "https://randopitons.re/randonnee/1254-piton-fournaise-depuis-pas-bellecombe-circuit-2018"
+        };
+
         // Structure du Voyage
         var timelineData = [
             {
                 day: "J1 - Lundi 28/09",
+                date: "2026-09-28",
                 title: "Arrivée St-Denis ➔ Cirque de Salazie ➔ Gîte Grand Îlet",
                 center: [-21.026, 55.551],
                 zoom: 11,
@@ -284,19 +418,21 @@
             },
             {
                 day: "J2 - Mardi 29/09",
+                date: "2026-09-29",
                 title: "Gîte Grand Îlet ➔ Rando Mafate ➔ Gîte Grand Îlet",
                 center: [-21.060, 55.460],
                 zoom: 12,
                 color: "#e74c3c",
                 points: [
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon },
-                    { name: "Col des Bœufs (Parking Rando)", lat: -21.076, lng: 55.458, icon: redIcon },
-                    { name: "La Nouvelle (Mafate - Rando)", lat: -21.082, lng: 55.438, icon: redIcon },
+                    { name: "Col des Bœufs (Parking Rando)", lat: -21.076, lng: 55.458, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
+                    { name: "La Nouvelle (Mafate - Rando)", lat: -21.082, lng: 55.438, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
             {
                 day: "J3 - Mercredi 30/09",
+                date: "2026-09-30",
                 title: "Gîte Grand Îlet ➔ Sud Sauvage ➔ Gîte Vincendo",
                 center: [-21.220, 55.700],
                 zoom: 10,
@@ -312,6 +448,7 @@
             },
             {
                 day: "J4 - Jeudi 01/10",
+                date: "2026-10-01",
                 title: "Gîte Vincendo ➔ Piton de la Fournaise ➔ Gîte Vincendo",
                 center: [-21.250, 55.630],
                 zoom: 11,
@@ -319,12 +456,13 @@
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
                     { name: "Bourg-Murat / Plaine des Cafres", lat: -21.203, lng: 55.571, icon: violetIcon },
-                    { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.221, lng: 55.688, icon: violetIcon },
+                    { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.221, lng: 55.688, icon: hikingIcon, randoLink: RANDO_FOURNAISE },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
             {
                 day: "J5 - Vendredi 02/10",
+                date: "2026-10-02",
                 title: "Gîte Vincendo ➔ Cirque de Cilaos ➔ Les Makes ➔ Gîte Vincendo",
                 center: [-21.200, 55.480],
                 zoom: 11,
@@ -338,6 +476,7 @@
             },
             {
                 day: "J6 - Samedi 03/10",
+                date: "2026-10-03",
                 title: "Gîte Vincendo ➔ St-Pierre ➔ Hôtel Le Récif (St-Gilles)",
                 center: [-21.220, 55.350],
                 zoom: 11,
@@ -352,6 +491,7 @@
             },
             {
                 day: "J7 - Dimanche 04/10",
+                date: "2026-10-04",
                 title: "Hôtel St-Gilles ➔ Piton Maïdo ➔ ULM Cambaie ➔ Hôtel",
                 center: [-21.030, 55.300],
                 zoom: 11,
@@ -365,6 +505,7 @@
             },
             {
                 day: "J8 - Lundi 05/10",
+                date: "2026-10-05",
                 title: "Hôtel St-Gilles ➔ Jardin d'Éden ➔ St-Leu ➔ Hôtel",
                 center: [-21.100, 55.250],
                 zoom: 12,
@@ -378,6 +519,7 @@
             },
             {
                 day: "J9 - Mardi 06/10",
+                date: "2026-10-06",
                 title: "Journée Détente Lagon & Côte Ouest",
                 center: [-21.066, 55.224],
                 zoom: 13,
@@ -388,19 +530,21 @@
             },
             {
                 day: "J10 - Mercredi 07/10",
+                date: "2026-10-07",
                 title: "Hôtel ➔ Cap Noir (Dos d'Âne) ➔ Boucan Canot ➔ Hôtel",
                 center: [-21.020, 55.300],
                 zoom: 12,
                 color: "#2980b9",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
-                    { name: "Cap Noir / Dos d'Âne (Rando 2h)", lat: -20.978, lng: 55.369, icon: blueIcon },
+                    { name: "Cap Noir / Dos d'Âne (Rando 2h)", lat: -20.978, lng: 55.369, icon: hikingIcon, randoLink: RANDO_CAP_NOIR },
                     { name: "Plage de Boucan Canot", lat: -21.031, lng: 55.227, icon: blueIcon },
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
             },
             {
                 day: "J11 - Jeudi 08/10",
+                date: "2026-10-08",
                 title: "Hôtel St-Gilles ➔ Aéroport St-Denis ➔ Hôtel Maurice",
                 center: [-20.500, 56.500],
                 zoom: 9,
@@ -413,6 +557,7 @@
             },
             {
                 day: "J12 - Vendredi 09/10",
+                date: "2026-10-09",
                 title: "Hôtel Grand Baie ➔ Château Labourdonnais ➔ Hôtel",
                 center: [-20.040, 57.570],
                 zoom: 12,
@@ -425,6 +570,7 @@
             },
             {
                 day: "J13 - Samedi 10/10",
+                date: "2026-10-10",
                 title: "Hôtel Grand Baie ➔ Jardin Pamplemousses & Sucre ➔ Hôtel",
                 center: [-20.060, 57.580],
                 zoom: 12,
@@ -481,6 +627,31 @@
 
         var markersRegistry = {};
 
+        // Fonctions auxiliaires pour générer les boutons de navigation dans les popups
+        function getWazeBtn(lat, lng) {
+            return `<a class="waze-btn" href="https://waze.com/ul?ll=${lat},${lng}&navigate=yes" target="_blank" rel="noopener">🚙 Waze</a>`;
+        }
+
+        function getGoogleMapsBtn(lat, lng) {
+            return `<a class="gmaps-btn" href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
+        }
+
+        function getRandoBtn(randoLink) {
+            if (!randoLink) return '';
+            var btns = '';
+            if (randoLink.randopitons) {
+                btns += `<a class="rando-btn" href="${randoLink.randopitons}" target="_blank" rel="noopener">🥾 Randopitons</a>`;
+            }
+            if (randoLink.visorando) {
+                btns += `<a class="rando-btn" href="${randoLink.visorando}" target="_blank" rel="noopener">🥾 Visorando</a>`;
+            }
+            return btns;
+        }
+
+        function getActionButtons(lat, lng, randoLink) {
+            return `<br>${getGoogleMapsBtn(lat, lng)}${getWazeBtn(lat, lng)}${getRandoBtn(randoLink)}`;
+        }
+
         // 1. Afficher TOUS LES POINTS du séjour dès le départ
         var addedPointsKeys = new Set();
 
@@ -490,8 +661,9 @@
                 
                 if (!addedPointsKeys.has(key)) {
                     addedPointsKeys.add(key);
+                    var popupContent = `<b>${d.day}</b><br>📍 <b>${pt.name}</b>${getActionButtons(pt.lat, pt.lng, pt.randoLink)}`;
                     var marker = L.marker([pt.lat, pt.lng], { icon: pt.icon })
-                        .bindPopup(`<b>${d.day}</b><br>📍 <b>${pt.name}</b>`);
+                        .bindPopup(popupContent);
 
                     if (pt.icon === houseIcon) {
                         marker.addTo(allAccLayer);
@@ -508,8 +680,9 @@
 
         // 2. Afficher les points Gastronomie & Saucisse
         sausagePoints.forEach(function(pt) {
+            var popupContent = `🌭 <b>${pt.name}</b><br><span style="font-size:12px;">${pt.desc}</span>${getActionButtons(pt.lat, pt.lng, null)}`;
             var marker = L.marker([pt.lat, pt.lng], { icon: sausageIcon })
-                .bindPopup(`🌭 <b>${pt.name}</b><br><span style="font-size:12px;">${pt.desc}</span>`);
+                .bindPopup(popupContent);
             marker.addTo(allSausageLayer);
         });
 
@@ -533,6 +706,73 @@
             return null;
         }
 
+        // 4. Gestion API Open-Meteo (météo en direct)
+        var weatherCache = {};
+        var WEATHER_ICONS = {
+            0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+            45: "🌫️", 48: "🌫️",
+            51: "🌦️", 53: "🌦️", 55: "🌦️",
+            56: "🌧️", 57: "🌧️",
+            61: "🌧️", 63: "🌧️", 65: "🌧️",
+            66: "🌧️", 67: "🌧️",
+            71: "🌨️", 73: "🌨️", 75: "🌨️", 77: "🌨️",
+            80: "🌦️", 81: "🌧️", 82: "⛈️",
+            85: "🌨️", 86: "🌨️",
+            95: "⛈️", 96: "⛈️", 99: "⛈️"
+        };
+
+        async function fetchWeather(lat, lng) {
+            var key = `${lat.toFixed(3)}_${lng.toFixed(3)}`;
+            if (weatherCache[key]) return weatherCache[key];
+
+            var url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&timezone=Indian%2FReunion`;
+            try {
+                var response = await fetch(url);
+                var data = await response.json();
+                if (data.current) {
+                    weatherCache[key] = data.current;
+                    return data.current;
+                }
+            } catch (err) {
+                console.error("Erreur météo Open-Meteo:", err);
+            }
+            return null;
+        }
+
+        // 5. Gestion API Sunrise-Sunset (lever / coucher du soleil)
+        var sunCache = {};
+
+        function utcToReunionTime(isoString) {
+            // Convertit une heure UTC (ISO) en heure locale Réunion/Maurice (UTC+4)
+            var d = new Date(isoString);
+            d.setUTCHours(d.getUTCHours() + 4);
+            var h = String(d.getUTCHours()).padStart(2, '0');
+            var m = String(d.getUTCMinutes()).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        async function fetchSunTimes(lat, lng, date) {
+            var key = `${lat.toFixed(3)}_${lng.toFixed(3)}_${date}`;
+            if (sunCache[key]) return sunCache[key];
+
+            var url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=${date}&formatted=0`;
+            try {
+                var response = await fetch(url);
+                var data = await response.json();
+                if (data.status === "OK") {
+                    var result = {
+                        sunrise: utcToReunionTime(data.results.sunrise),
+                        sunset: utcToReunionTime(data.results.sunset)
+                    };
+                    sunCache[key] = result;
+                    return result;
+                }
+            } catch (err) {
+                console.error("Erreur Sunrise-Sunset:", err);
+            }
+            return null;
+        }
+
         // Interface & Menu
         var sidebar = document.getElementById('sidebar');
         var burgerBtn = document.getElementById('burgerBtn');
@@ -544,6 +784,8 @@
         var timelineList = document.getElementById('timelineList');
         var dayBadge = document.getElementById('dayBadge');
         var routeBadge = document.getElementById('routeBadge');
+        var weatherBadge = document.getElementById('weatherBadge');
+        var sunBadge = document.getElementById('sunBadge');
         var timeSlider = document.getElementById('timeSlider');
 
         timelineData.forEach(function(item, idx) {
@@ -554,15 +796,23 @@
             timelineList.appendChild(li);
         });
 
+        // Jeton de requête pour éviter que des réponses tardives n'écrasent l'affichage du jour courant
+        var selectionToken = 0;
+
         async function selectDay(index) {
+            index = parseInt(index);
+            var myToken = ++selectionToken;
+
             timeSlider.value = index;
             var data = timelineData[index];
             dayBadge.innerText = `${data.day}`;
             routeBadge.innerHTML = `<i>Calcul du trajet en cours...</i>`;
+            weatherBadge.innerHTML = `⏳ Météo...`;
+            sunBadge.innerHTML = `⏳ Soleil...`;
 
             var items = timelineList.querySelectorAll('.timeline-item');
             items.forEach((el, i) => {
-                if (i === parseInt(index)) el.classList.add('active');
+                if (i === index) el.classList.add('active');
                 else el.classList.remove('active');
             });
 
@@ -570,12 +820,35 @@
 
             map.flyTo(data.center, data.zoom, { duration: 1.0 });
 
+            // Météo en direct (coordonnées du centre de la carte du jour)
+            fetchWeather(data.center[0], data.center[1]).then(function(w) {
+                if (myToken !== selectionToken) return;
+                if (w) {
+                    var icon = WEATHER_ICONS[w.weathercode] || "🌡️";
+                    weatherBadge.innerHTML = `${icon} ${w.temperature_2m.toFixed(1)}°C`;
+                } else {
+                    weatherBadge.innerHTML = `⚠️ Météo indisponible`;
+                }
+            });
+
+            // Lever / coucher du soleil (heure locale Réunion/Maurice UTC+4)
+            fetchSunTimes(data.center[0], data.center[1], data.date).then(function(s) {
+                if (myToken !== selectionToken) return;
+                if (s) {
+                    sunBadge.innerHTML = `🌅 ${s.sunrise}<br>🌇 ${s.sunset}`;
+                } else {
+                    sunBadge.innerHTML = `⚠️ Soleil indisponible`;
+                }
+            });
+
             if (data.points.length >= 2) {
                 var routeData = routeCache[index];
                 if (!routeData) {
                     routeData = await fetchOSRMRoute(data.points);
                     routeCache[index] = routeData;
                 }
+
+                if (myToken !== selectionToken) return;
 
                 if (routeData) {
                     var latLngs = routeData.geometry.coordinates.map(c => [c[1], c[0]]);
