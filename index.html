@@ -234,6 +234,58 @@
             background-color: #1e8449;
             color: #fff;
         }
+
+        .leaflet-container a {
+            color: #FFF!important;
+        }
+
+        /* Résumé global du voyage */
+        .trip-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .trip-summary-item {
+            background: #2c3e50;
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            text-align: center;
+        }
+        .trip-summary-item b { font-size: 14px; }
+
+        /* Boutons de navigation jour précédent / suivant */
+        .nav-btn {
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: none;
+            width: 36px;
+            height: 34px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .nav-btn:hover { background: #d5dbdb; }
+        .nav-btn:disabled { opacity: 0.4; cursor: default; }
+
+        /* Adaptation mobile */
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100vw;
+                left: -100vw;
+                padding: 15px;
+            }
+            .trip-summary { grid-template-columns: 1fr 1fr; gap: 4px; }
+            .weather-sun-row { flex-direction: column; gap: 6px; }
+            .sidebar-header h3 { font-size: 16px; }
+            .timeline-list { max-height: 150px; }
+            .burger-btn { top: 10px; left: 10px; width: 40px; height: 40px; }
+        }
     </style>
 </head>
 <body>
@@ -246,12 +298,21 @@
             <button class="close-btn" id="closeBtn">&times;</button>
         </div>
 
+        <div class="trip-summary" id="tripSummary">
+            <div class="trip-summary-item">📅 <b>13</b> jours</div>
+            <div class="trip-summary-item">🥾 <b>3</b> randos</div>
+            <div class="trip-summary-item" id="summaryKm">🚗 <i>calcul...</i></div>
+            <div class="trip-summary-item" id="summaryTime">⏱️ <i>calcul...</i></div>
+        </div>
+
         <div class="timeline-section">
             <div class="section-title">⏱️ Frise Chronologique & Routes</div>
             <div class="timeline-controls">
+                <button class="nav-btn" id="prevBtn" title="Jour précédent">◀</button>
                 <button class="play-btn" id="playBtn">▶ Jouer</button>
-                <input type="range" class="timeline-slider" id="timeSlider" min="0" max="12" value="0" step="1">
+                <button class="nav-btn" id="nextBtn" title="Jour suivant">▶</button>
             </div>
+            <input type="range" class="timeline-slider" id="timeSlider" min="0" max="12" value="0" step="1">
             <div class="current-day-badge" id="dayBadge">J1 - Lundi 28/09</div>
 
             <div class="weather-sun-row">
@@ -270,7 +331,7 @@
             <label class="filter-item"><input type="checkbox" id="toggleRoutes" checked> 🛣️ Trajet routier du jour</label>
             <label class="filter-item"><input type="checkbox" id="toggleAcc" checked> 🏠 Gîtes & Hébergements</label>
             <label class="filter-item"><input type="checkbox" id="toggleResto" checked> 🍽️ Restaurants & Halte gourmande</label>
-            <label class="filter-item"><input type="checkbox" id="toggleSausage" checked> 🌭 Rougail Saucisse</label>
+            <label class="filter-item"><input type="checkbox" id="toggleSausage" checked> 🌭 Saucisse & Gastronomie traditionnelle</label>
         </div>
 
         <div class="section-title">🗓️ Légende des étapes & icônes</div>
@@ -309,11 +370,29 @@
         var map = L.map('map', { zoomControl: false }).setView([-21.1151, 55.5364], 10);
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // Fonds de carte disponibles
+        var streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             subdomains: 'abcd',
             maxZoom: 19
         }).addTo(map);
+
+        var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+            maxZoom: 19
+        });
+
+        var reliefLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)',
+            subdomains: 'abc',
+            maxZoom: 17
+        });
+
+        L.control.layers({
+            "🗺️ Plan": streetLayer,
+            "🛰️ Satellite": satelliteLayer,
+            "⛰️ Relief": reliefLayer
+        }, null, { position: 'topright', collapsed: true }).addTo(map);
 
         function createIcon(color) {
             return L.icon({
@@ -380,10 +459,10 @@
         var yellowIcon = createIcon('yellow');
 
         // Adresses / Gîtes repères
-        var GITE_GUETALI = { name: "Gîte Le Guétali", lat: -21.0315, lng: 55.4828 };
-        var GITE_ARBRE_VIE = { name: "Gîte L'Arbre de Vie", lat: -21.3664, lng: 55.6601 };
-        var HOTEL_RECIF = { name: "Hôtel Le Récif", lat: -21.0667, lng: 55.2241 };
-        var HOTEL_VERANDA = { name: "Hôtel Veranda Grand Baie", lat: -20.0125, lng: 57.5812 };
+        var GITE_GUETALI = { name: "Gîte Le Guétali", lat: -21.0328503, lng: 55.4741783 };
+        var GITE_ARBRE_VIE = { name: "Gîte L'Arbre de Vie", lat: -21.371321, lng: 55.6733009 };
+        var HOTEL_RECIF = { name: "Hôtel Le Récif", lat: -21.0662486, lng: 55.2225537 };
+        var HOTEL_VERANDA = { name: "Hôtel Veranda Grand Baie", lat: -20.0084159, lng: 57.5788026 };
 
         // Liens de randonnée (Visorando / Randopitons) pour les points concernés
         var RANDO_COL_BOEUFS = {
@@ -409,10 +488,10 @@
                 zoom: 11,
                 color: "#e74c3c",
                 points: [
-                    { name: "Aéroport St-Denis (Départ 9h10)", lat: -20.887, lng: 55.510, icon: redIcon },
-                    { name: "Cascade Bassin Bœuf", lat: -20.932, lng: 55.568, icon: redIcon },
-                    { name: "Resto La Cascade Blanche", lat: -21.0263, lng: 55.5512, icon: restaurantIcon },
-                    { name: "Hell-Bourg (Musée Musique)", lat: -21.064, lng: 55.518, icon: redIcon },
+                    { name: "Aéroport St-Denis (Départ 9h10)", lat: -20.8915972, lng: 55.512241, icon: redIcon },
+                    { name: "Cascade Bassin Bœuf", lat: -20.949167, lng: 55.583611, icon: redIcon },
+                    { name: "Resto La Cascade Blanche", lat: -20.9993595, lng: 55.5794508, icon: restaurantIcon },
+                    { name: "Hell-Bourg (Musée Musique)", lat: -21.0637609, lng: 55.5186291, icon: redIcon },
                     { name: "Gîte Le Guétali (Grand Îlet)", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
@@ -425,8 +504,8 @@
                 color: "#e74c3c",
                 points: [
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon },
-                    { name: "Col des Bœufs (Parking Rando)", lat: -21.076, lng: 55.458, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
-                    { name: "La Nouvelle (Mafate - Rando)", lat: -21.082, lng: 55.438, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
+                    { name: "Col des Bœufs (Parking Rando)", lat: -21.0712355, lng: 55.448285, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
+                    { name: "La Nouvelle (Mafate - Rando)", lat: -21.0749944, lng: 55.4229356, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
@@ -439,10 +518,10 @@
                 color: "#e67e22",
                 points: [
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon },
-                    { name: "Belvédère Takamaka", lat: -21.093, lng: 55.617, icon: orangeIcon },
-                    { name: "Anse des Cascades (Pause Déj)", lat: -21.185, lng: 55.831, icon: restaurantIcon },
-                    { name: "Coulées de Lave (Grands Brûlés)", lat: -21.285, lng: 55.808, icon: orangeIcon },
-                    { name: "Cascade de Grand Galet", lat: -21.2889, lng: 55.6547, icon: orangeIcon },
+                    { name: "Belvédère Takamaka", lat: -21.0770796, lng: 55.6319329, icon: orangeIcon },
+                    { name: "Anse des Cascades (Pause Déj)", lat: -21.1850167, lng: 55.8268239, icon: restaurantIcon },
+                    { name: "Coulées de Lave (Grands Brûlés)", lat: -21.2290632, lng: 55.804072, icon: orangeIcon },
+                    { name: "Cascade de Grand Galet", lat: -21.3116237, lng: 55.6418507, icon: orangeIcon },
                     { name: "Gîte L'Arbre de Vie (Vincendo)", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -455,8 +534,8 @@
                 color: "#8e44ad",
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
-                    { name: "Bourg-Murat / Plaine des Cafres", lat: -21.203, lng: 55.571, icon: violetIcon },
-                    { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.221, lng: 55.688, icon: hikingIcon, randoLink: RANDO_FOURNAISE },
+                    { name: "Bourg-Murat / Plaine des Cafres", lat: -21.2012119, lng: 55.5780219, icon: violetIcon },
+                    { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.2222188, lng: 55.6894317, icon: hikingIcon, randoLink: RANDO_FOURNAISE },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -469,8 +548,8 @@
                 color: "#27ae60",
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
-                    { name: "Cirque de Cilaos (Route des 400 virages)", lat: -21.135, lng: 55.472, icon: greenIcon },
-                    { name: "Les Makes (Belvédère de la Fenêtre)", lat: -21.205, lng: 55.410, icon: greenIcon },
+                    { name: "Cirque de Cilaos (Route des 400 virages)", lat: -21.1427529, lng: 55.4639974, icon: greenIcon },
+                    { name: "Les Makes (Belvédère de la Fenêtre)", lat: -21.1853877, lng: 55.4330234, icon: greenIcon },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -483,9 +562,9 @@
                 color: "#2980b9",
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
-                    { name: "Marché Forain de St-Pierre", lat: -21.339, lng: 55.478, icon: blueIcon },
-                    { name: "Saga des Rhums (Isautier)", lat: -21.3283, lng: 55.4674, icon: blueIcon },
-                    { name: "Plage de l'Étang-Salé", lat: -21.265, lng: 55.367, icon: blueIcon },
+                    { name: "Marché Forain de St-Pierre", lat: -21.3399311, lng: 55.4597428, icon: blueIcon },
+                    { name: "Saga des Rhums (Isautier)", lat: -21.3123309, lng: 55.4657345, icon: blueIcon },
+                    { name: "Plage de l'Étang-Salé", lat: -21.2622774, lng: 55.3320837, icon: blueIcon },
                     { name: "Hôtel Le Récif (St-Gilles)", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
             },
@@ -498,8 +577,8 @@
                 color: "#2980b9",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
-                    { name: "Piton Maïdo (Vue 6h00)", lat: -21.071, lng: 55.388, icon: blueIcon },
-                    { name: "Base ULM de Cambaie (St-Paul)", lat: -20.96357, lng: 55.28190, icon: blueIcon },
+                    { name: "Piton Maïdo (Vue 6h00)", lat: -21.068889, lng: 55.387778, icon: blueIcon },
+                    { name: "Base ULM de Cambaie (St-Paul)", lat: -20.9626795, lng: 55.2818563, icon: blueIcon },
                     { name: "Hôtel Le Récif (Lagon)", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
             },
@@ -512,8 +591,8 @@
                 color: "#2980b9",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
-                    { name: "Jardin d'Éden", lat: -21.072, lng: 55.228, icon: blueIcon },
-                    { name: "Saint-Leu (Front de mer & Parapente)", lat: -21.165, lng: 55.287, icon: blueIcon },
+                    { name: "Jardin d'Éden", lat: -21.0771788, lng: 55.2289407, icon: blueIcon },
+                    { name: "Saint-Leu (Front de mer & Parapente)", lat: -21.151484, lng: 55.278727, icon: blueIcon },
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
             },
@@ -537,8 +616,8 @@
                 color: "#2980b9",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
-                    { name: "Cap Noir / Dos d'Âne (Rando 2h)", lat: -20.978, lng: 55.369, icon: hikingIcon, randoLink: RANDO_CAP_NOIR },
-                    { name: "Plage de Boucan Canot", lat: -21.031, lng: 55.227, icon: blueIcon },
+                    { name: "Cap Noir / Dos d'Âne (Rando 2h)", lat: -20.9930591, lng: 55.3897488, icon: hikingIcon, randoLink: RANDO_CAP_NOIR },
+                    { name: "Plage de Boucan Canot", lat: -21.0277948, lng: 55.2259182, icon: blueIcon },
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
             },
@@ -551,7 +630,7 @@
                 color: "#f1c40f",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
-                    { name: "Aéroport Roland Garros (Vol 14h)", lat: -20.887, lng: 55.510, icon: blueIcon },
+                    { name: "Aéroport Roland Garros (Vol 14h)", lat: -20.8915972, lng: 55.512241, icon: blueIcon },
                     { name: "Hôtel Veranda Grand Baie (Maurice)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
                 ]
             },
@@ -564,7 +643,7 @@
                 color: "#f1c40f",
                 points: [
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon },
-                    { name: "Château de Labourdonnais", lat: -20.068, lng: 57.568, icon: yellowIcon },
+                    { name: "Château de Labourdonnais", lat: -20.0735467, lng: 57.6176141, icon: yellowIcon },
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
                 ]
             },
@@ -577,8 +656,8 @@
                 color: "#f1c40f",
                 points: [
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon },
-                    { name: "Jardin Botanique de Pamplemousses", lat: -20.106, lng: 57.580, icon: yellowIcon },
-                    { name: "L'Aventure du Sucre", lat: -20.098, lng: 57.572, icon: yellowIcon },
+                    { name: "Jardin Botanique de Pamplemousses", lat: -20.1070516, lng: 57.5797065, icon: yellowIcon },
+                    { name: "L'Aventure du Sucre", lat: -20.0979509, lng: 57.5743829, icon: yellowIcon },
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
                 ]
             }
@@ -589,32 +668,32 @@
             {
                 name: "Le Far Far Kréol",
                 desc: "Atelier de cuisine et table d’hôte incontournable située à Sainte-Suzanne, animée par Jacky, spécialisée dans la transmission des recettes traditionnelles au feu de bois.",
-                lat: -20.9056, lng: 55.6072
+                lat: -20.9332059, lng: 55.582777
             },
             {
                 name: "La Case de l'Oncle Tom",
                 desc: "Table locale et conviviale axée sur le partage et le respect des saveurs réunionnaises d'autrefois.",
-                lat: -21.1325, lng: 55.4712
+                lat: -20.8936172, lng: 55.4691815
             },
             {
                 name: "Les Marmites d'Armelle",
                 desc: "Établissement réputé pour ses carries et rougails mijotés à l’ancienne, symboles du patrimoine 'lontan'.",
-                lat: -21.0581, lng: 55.2285
+                lat: -21.0930012, lng: 55.2360023
             },
             {
                 name: "Pépé Dofé",
                 desc: "Concept culinaire mettant en avant l'art du feu de bois ('dofé' signifiant le feu), un élément central dans la cuisson parfaite des saucisses traditionnelles.",
-                lat: -20.8821, lng: 55.4521
+                lat: -20.8817626, lng: 55.4512965
             },
             {
                 name: "Charcuterie Maillot",
                 desc: "Charcuterie artisanale hautement estimée à La Réunion, essentielle pour l'approvisionnement en authentiques saucisses fumées et en boucané de porc de haute qualité.",
-                lat: -20.9523, lng: 55.6512
+                lat: -20.8804338, lng: 55.4568312
             },
             {
                 name: "Marché Forain du Chaudron",
                 desc: "Grand marché traditionnel pour sélectionner les légumes, oignons, tomates et piments directement auprès des producteurs locaux.",
-                lat: -20.8920, lng: 55.4850
+                lat: -20.8913291, lng: 55.4877958
             }
         ];
 
@@ -624,6 +703,11 @@
         var allRestoLayer = L.layerGroup().addTo(map);
         var allSausageLayer = L.layerGroup().addTo(map);
         var activeRouteLayer = L.layerGroup().addTo(map);
+
+        // Pane dédié pour les halos de mise en avant du jour actif (sous les icônes, au-dessus des tuiles)
+        map.createPane('highlightPane');
+        map.getPane('highlightPane').style.zIndex = 450;
+        var highlightLayer = L.layerGroup().addTo(map);
 
         var markersRegistry = {};
 
@@ -706,6 +790,35 @@
             return null;
         }
 
+        // 3bis. Résumé global du voyage (distance & temps de route cumulés)
+        var summaryKmEl = document.getElementById('summaryKm');
+        var summaryTimeEl = document.getElementById('summaryTime');
+
+        async function computeTripSummary() {
+            var totalKm = 0;
+            var totalSeconds = 0;
+
+            for (var i = 0; i < timelineData.length; i++) {
+                var d = timelineData[i];
+                if (d.points.length < 2) continue;
+                var routeData = routeCache[i];
+                if (!routeData) {
+                    routeData = await fetchOSRMRoute(d.points);
+                    routeCache[i] = routeData;
+                }
+                if (routeData) {
+                    totalKm += routeData.distance / 1000;
+                    totalSeconds += routeData.duration;
+                }
+            }
+
+            summaryKmEl.innerHTML = `🚗 <b>${Math.round(totalKm)}</b> km`;
+            var totalMinutes = Math.round(totalSeconds / 60);
+            var h = Math.floor(totalMinutes / 60);
+            var m = totalMinutes % 60;
+            summaryTimeEl.innerHTML = `⏱️ <b>${h}h${m < 10 ? '0' : ''}${m}</b> route`;
+        }
+
         // 4. Gestion API Open-Meteo (météo en direct)
         var weatherCache = {};
         var WEATHER_ICONS = {
@@ -721,22 +834,112 @@
             95: "⛈️", 96: "⛈️", 99: "⛈️"
         };
 
-        async function fetchWeather(lat, lng) {
-            var key = `${lat.toFixed(3)}_${lng.toFixed(3)}`;
+        async function fetchClimateNormal(lat, lng, isoDate) {
+            // Calcule une normale saisonnière (moyenne sur plusieurs années passées)
+            // pour la même date calendaire, utilisée uniquement quand le jour est trop
+            // éloigné pour une vraie prévision (au-delà de la fenêtre de 16 jours d'Open-Meteo).
+            var monthDay = isoDate.substring(5); // "MM-DD"
+            var key = `normal_${lat.toFixed(3)}_${lng.toFixed(3)}_${monthDay}`;
             if (weatherCache[key]) return weatherCache[key];
 
-            var url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode&timezone=Indian%2FReunion`;
+            var years = [2020, 2021, 2022, 2023, 2024];
+            var requests = years.map(function(year) {
+                var dateStr = `${year}-${monthDay}`;
+                var url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${dateStr}&end_date=${dateStr}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Indian%2FReunion`;
+                return fetch(url).then(r => r.json()).catch(() => null);
+            });
+
+            try {
+                var results = await Promise.all(requests);
+                var maxTemps = [], minTemps = [], codes = [];
+                results.forEach(function(r) {
+                    if (r && r.daily && r.daily.temperature_2m_max && r.daily.temperature_2m_max.length > 0 && r.daily.temperature_2m_max[0] !== null) {
+                        maxTemps.push(r.daily.temperature_2m_max[0]);
+                        minTemps.push(r.daily.temperature_2m_min[0]);
+                        codes.push(r.daily.weathercode[0]);
+                    }
+                });
+                if (maxTemps.length === 0) return null;
+
+                var avgMax = maxTemps.reduce((a, b) => a + b, 0) / maxTemps.length;
+                var avgMin = minTemps.reduce((a, b) => a + b, 0) / minTemps.length;
+                var freq = {};
+                codes.forEach(c => freq[c] = (freq[c] || 0) + 1);
+                var modeCode = Object.keys(freq).reduce((a, b) => freq[a] > freq[b] ? a : b);
+
+                var result = { tempMax: avgMax, tempMin: avgMin, weathercode: parseInt(modeCode), label: `normale sur ${maxTemps.length} ans` };
+                weatherCache[key] = result;
+                return result;
+            } catch (err) {
+                console.error("Erreur normales climatiques Open-Meteo:", err);
+            }
+            return null;
+        }
+
+        // Vraie prévision (fiable jusqu'à ~16 jours avant la date)
+        async function fetchForecastDay(lat, lng, isoDate) {
+            var key = `forecast_${lat.toFixed(3)}_${lng.toFixed(3)}_${isoDate}`;
+            if (weatherCache[key]) return weatherCache[key];
+
+            var url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=temperature_2m_max,temperature_2m_min,weathercode&start_date=${isoDate}&end_date=${isoDate}&timezone=Indian%2FReunion`;
             try {
                 var response = await fetch(url);
                 var data = await response.json();
-                if (data.current) {
-                    weatherCache[key] = data.current;
-                    return data.current;
+                if (data.daily && data.daily.temperature_2m_max && data.daily.temperature_2m_max.length > 0) {
+                    var result = {
+                        tempMax: data.daily.temperature_2m_max[0],
+                        tempMin: data.daily.temperature_2m_min[0],
+                        weathercode: data.daily.weathercode[0],
+                        label: "prévision"
+                    };
+                    weatherCache[key] = result;
+                    return result;
                 }
             } catch (err) {
-                console.error("Erreur météo Open-Meteo:", err);
+                console.error("Erreur prévision Open-Meteo:", err);
             }
             return null;
+        }
+
+        // Météo réellement observée (pour un jour du voyage déjà passé)
+        async function fetchObservedDay(lat, lng, isoDate) {
+            var key = `observed_${lat.toFixed(3)}_${lng.toFixed(3)}_${isoDate}`;
+            if (weatherCache[key]) return weatherCache[key];
+
+            var url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&start_date=${isoDate}&end_date=${isoDate}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Indian%2FReunion`;
+            try {
+                var response = await fetch(url);
+                var data = await response.json();
+                if (data.daily && data.daily.temperature_2m_max && data.daily.temperature_2m_max.length > 0 && data.daily.temperature_2m_max[0] !== null) {
+                    var result = {
+                        tempMax: data.daily.temperature_2m_max[0],
+                        tempMin: data.daily.temperature_2m_min[0],
+                        weathercode: data.daily.weathercode[0],
+                        label: "observé ce jour-là"
+                    };
+                    weatherCache[key] = result;
+                    return result;
+                }
+            } catch (err) {
+                console.error("Erreur historique Open-Meteo:", err);
+            }
+            return null;
+        }
+
+        // Sélectionne automatiquement la meilleure source météo selon la proximité de la date :
+        // jour déjà passé → météo observée ; dans les 15 prochains jours → vraie prévision ;
+        // au-delà → normale saisonnière moyenne (seule donnée fiable aussi loin à l'avance).
+        async function fetchDayWeather(lat, lng, isoDate) {
+            var todayStr = new Date().toISOString().substring(0, 10);
+            var diffDays = Math.round((new Date(isoDate + "T00:00:00") - new Date(todayStr + "T00:00:00")) / 86400000);
+
+            if (diffDays < 0) {
+                return fetchObservedDay(lat, lng, isoDate);
+            } else if (diffDays <= 15) {
+                return fetchForecastDay(lat, lng, isoDate);
+            } else {
+                return fetchClimateNormal(lat, lng, isoDate);
+            }
         }
 
         // 5. Gestion API Sunrise-Sunset (lever / coucher du soleil)
@@ -806,6 +1009,7 @@
             timeSlider.value = index;
             var data = timelineData[index];
             dayBadge.innerText = `${data.day}`;
+            updateNavButtons(index);
             routeBadge.innerHTML = `<i>Calcul du trajet en cours...</i>`;
             weatherBadge.innerHTML = `⏳ Météo...`;
             sunBadge.innerHTML = `⏳ Soleil...`;
@@ -817,15 +1021,29 @@
             });
 
             activeRouteLayer.clearLayers();
+            highlightLayer.clearLayers();
+
+            // Halo de mise en avant sur les points du jour sélectionné
+            data.points.forEach(function(pt) {
+                L.circleMarker([pt.lat, pt.lng], {
+                    pane: 'highlightPane',
+                    radius: 18,
+                    color: data.color,
+                    weight: 3,
+                    fillColor: data.color,
+                    fillOpacity: 0.18,
+                    opacity: 0.7
+                }).addTo(highlightLayer);
+            });
 
             map.flyTo(data.center, data.zoom, { duration: 1.0 });
 
-            // Météo en direct (coordonnées du centre de la carte du jour)
-            fetchWeather(data.center[0], data.center[1]).then(function(w) {
+            // Météo du jour : observée / prévision / normale saisonnière selon la proximité de la date
+            fetchDayWeather(data.center[0], data.center[1], data.date).then(function(w) {
                 if (myToken !== selectionToken) return;
                 if (w) {
                     var icon = WEATHER_ICONS[w.weathercode] || "🌡️";
-                    weatherBadge.innerHTML = `${icon} ${w.temperature_2m.toFixed(1)}°C`;
+                    weatherBadge.innerHTML = `${icon} ${w.tempMin.toFixed(0)}-${w.tempMax.toFixed(0)}°C<br><span style="font-weight:normal; font-size:10px;">${w.label}</span>`;
                 } else {
                     weatherBadge.innerHTML = `⚠️ Météo indisponible`;
                 }
@@ -886,6 +1104,24 @@
             selectDay(e.target.value);
         });
 
+        // Boutons Jour précédent / Jour suivant
+        var prevBtn = document.getElementById('prevBtn');
+        var nextBtn = document.getElementById('nextBtn');
+
+        function updateNavButtons(index) {
+            prevBtn.disabled = (index <= 0);
+            nextBtn.disabled = (index >= timelineData.length - 1);
+        }
+
+        prevBtn.addEventListener('click', function() {
+            var curr = parseInt(timeSlider.value);
+            if (curr > 0) selectDay(curr - 1);
+        });
+        nextBtn.addEventListener('click', function() {
+            var curr = parseInt(timeSlider.value);
+            if (curr < timelineData.length - 1) selectDay(curr + 1);
+        });
+
         // Animation de lecture automatique
         var playBtn = document.getElementById('playBtn');
         var isPlaying = false;
@@ -934,6 +1170,7 @@
 
         // Chargement initial
         selectDay(0);
+        computeTripSummary();
     </script>
 </body>
 </html>
