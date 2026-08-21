@@ -175,6 +175,32 @@
         .legend-box { font-size: 12px; line-height: 1.8; margin-top: 10px; }
         .legend-color { width: 12px; height: 12px; display: inline-block; border-radius: 3px; vertical-align: middle; margin-right: 5px; }
         .legend-icon { width: 18px; height: 18px; vertical-align: middle; margin-right: 5px; }
+        .legend-dashed {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px dashed;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+
+        /* Sections repliables (filtres, légende) */
+        .collapsible-section { margin-bottom: 4px; }
+        .collapsible-section summary {
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .collapsible-section summary::-webkit-details-marker { display: none; }
+        .collapsible-section summary::after {
+            content: '▸';
+            font-size: 12px;
+            color: #7f8c8d;
+            transition: transform 0.2s;
+        }
+        .collapsible-section[open] summary::after { transform: rotate(90deg); }
 
         /* Style du bouton Waze dans les popups */
         .waze-btn {
@@ -384,7 +410,7 @@
                 <button class="play-btn" id="playBtn">▶ Jouer</button>
                 <button class="nav-btn" id="nextBtn" title="Jour suivant">▶</button>
             </div>
-            <button class="overview-btn" id="overviewBtn">🗺️ Vue d'ensemble (tous les trajets)</button>
+            <button class="overview-btn" id="overviewBtn">🗺️ Vue d'ensemble</button>
             <input type="range" class="timeline-slider" id="timeSlider" min="0" max="0" value="0" step="1">
             <div class="current-day-badge" id="dayBadge">J1 - Lundi 28/09</div>
 
@@ -398,45 +424,62 @@
             <ul class="timeline-list" id="timelineList"></ul>
         </div>
 
-        <div class="section-title">🔍 Affichage sur la carte</div>
-        <div class="filter-group">
-            <label class="filter-item"><input type="checkbox" id="toggleSteps" checked> 📍 Étapes de l'itinéraire</label>
-            <label class="filter-item"><input type="checkbox" id="toggleRoutes" checked> 🛣️ Trajet routier du jour</label>
-            <label class="filter-item"><input type="checkbox" id="toggleAcc" checked> 🏠 Gîtes & Hébergements</label>
-            <label class="filter-item"><input type="checkbox" id="toggleResto" checked> 🍽️ Restaurants & Halte gourmande</label>
-            <label class="filter-item"><input type="checkbox" id="toggleSausage" checked> 🌭 Saucisse & Gastronomie traditionnelle</label>
-        </div>
+        <details class="collapsible-section">
+            <summary class="section-title">🔍 Affichage sur la carte</summary>
+            <div class="filter-group">
+                <label class="filter-item"><input type="checkbox" id="toggleSteps" checked> 📍 Étapes de l'itinéraire</label>
+                <label class="filter-item"><input type="checkbox" id="toggleRoutes" checked> 🛣️ Trajet routier du jour</label>
+                <label class="filter-item"><input type="checkbox" id="toggleAcc" checked> 🏠 Gîtes & Hébergements</label>
+                <label class="filter-item"><input type="checkbox" id="toggleResto" checked> 🍽️ Restaurants & Halte gourmande</label>
+                <label class="filter-item">
+                    <input type="checkbox" id="toggleSausage" checked>
+                    <svg width="16" height="16" viewBox="0 0 64 64" style="vertical-align: middle; margin-right: 2px;">
+                        <circle cx="32" cy="32" r="30" fill="#fdebd0" stroke="#a0522d" stroke-width="2.5"/>
+                        <g transform="rotate(-25 32 32)">
+                            <rect x="12" y="24" width="40" height="16" rx="8" fill="#a0522d" stroke="#6b3410" stroke-width="2"/>
+                            <ellipse cx="14" cy="32" rx="3" ry="7" fill="#6b3410"/>
+                            <ellipse cx="50" cy="32" rx="3" ry="7" fill="#6b3410"/>
+                        </g>
+                    </svg>
+                    Saucisse & Gastronomie traditionnelle
+                </label>
+            </div>
+        </details>
 
         <button class="print-btn" id="printBtn">🖨️ Imprimer / Exporter en PDF</button>
 
-        <div class="section-title">🗓️ Légende des étapes & icônes</div>
-        <div class="legend-box">
-            <div id="legendDates"></div>
-            <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
-            <div><img src="https://img.icons8.com/color/48/000000/home--v1.png" class="legend-icon"> Gîtes / Hébergements</div>
-            <div><img src="https://img.icons8.com/color/48/000000/restaurant.png" class="legend-icon"> Restaurants</div>
-            <div>
-                <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18" style="vertical-align: middle;">
-                    <circle cx="32" cy="32" r="30" fill="#fdebd0" stroke="#a0522d" stroke-width="2.5"/>
-                    <g transform="rotate(-25 32 32)">
-                        <rect x="12" y="24" width="40" height="16" rx="8" fill="#a0522d" stroke="#6b3410" stroke-width="2"/>
-                        <ellipse cx="14" cy="32" rx="3" ry="7" fill="#6b3410"/>
-                        <ellipse cx="50" cy="32" rx="3" ry="7" fill="#6b3410"/>
-                        <line x1="22" y1="25" x2="22" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
-                        <line x1="32" y1="25" x2="32" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
-                        <line x1="42" y1="25" x2="42" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
-                    </g>
-                </svg>
-                Rougail Saucisse & Gastronomie traditionnelle
+        <details class="collapsible-section">
+            <summary class="section-title">🗓️ Légende des étapes & icônes</summary>
+            <div class="legend-box">
+                <div id="legendDates"></div>
+                <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
+                <div><img src="https://img.icons8.com/color/48/000000/home--v1.png" class="legend-icon"> Gîtes / Hébergements</div>
+                <div><img src="https://img.icons8.com/color/48/000000/restaurant.png" class="legend-icon"> Restaurants</div>
+                <div>
+                    <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18" style="vertical-align: middle;">
+                        <circle cx="32" cy="32" r="30" fill="#fdebd0" stroke="#a0522d" stroke-width="2.5"/>
+                        <g transform="rotate(-25 32 32)">
+                            <rect x="12" y="24" width="40" height="16" rx="8" fill="#a0522d" stroke="#6b3410" stroke-width="2"/>
+                            <ellipse cx="14" cy="32" rx="3" ry="7" fill="#6b3410"/>
+                            <ellipse cx="50" cy="32" rx="3" ry="7" fill="#6b3410"/>
+                            <line x1="22" y1="25" x2="22" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
+                            <line x1="32" y1="25" x2="32" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
+                            <line x1="42" y1="25" x2="42" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
+                        </g>
+                    </svg>
+                    Rougail Saucisse & Gastronomie traditionnelle
+                </div>
+                <div>
+                    <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18" style="vertical-align: middle;">
+                        <circle cx="32" cy="32" r="30" fill="#16a085"/>
+                        <path d="M10,44 L24,20 L31,32 L38,22 L54,44 Z" fill="#ffffff"/>
+                    </svg>
+                    Points de randonnée (fiche Visorando / Randopitons)
+                </div>
+                <div><span class="legend-dashed" style="border-color:#16a085;"></span> Accessible uniquement à pied</div>
+                <div><span class="legend-dashed" style="border-color:#3498db;"></span> Accessible en avion</div>
             </div>
-            <div>
-                <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18" style="vertical-align: middle;">
-                    <circle cx="32" cy="32" r="30" fill="#16a085"/>
-                    <path d="M10,44 L24,20 L31,32 L38,22 L54,44 Z" fill="#ffffff"/>
-                </svg>
-                Points de randonnée (fiche Visorando / Randopitons)
-            </div>
-        </div>
+        </details>
     </div>
 
     <div id="map"></div>
@@ -657,7 +700,7 @@
                 color: "#2980b9",
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
-                    { name: "Marché Forain de St-Pierre", lat: -21.3399311, lng: 55.4597428, icon: blueIcon },
+                    { name: "Marché Forain de St-Pierre", lat: -21.3399311, lng: 55.4597428, icon: sausageIcon },
                     { name: "Saga des Rhums (Isautier)", lat: -21.3123309, lng: 55.4657345, icon: blueIcon },
                     { name: "Domaine du Café Grillé", lat: -21.306886, lng: 55.423972, icon: blueIcon },
                     { name: "Plage de l'Étang-Salé", lat: -21.2622774, lng: 55.3320837, icon: blueIcon },
@@ -811,6 +854,12 @@
         map.getPane('highlightPane').style.zIndex = 450;
         var highlightLayer = L.layerGroup().addTo(map);
 
+        // Pane dédié pour les indicateurs permanents "à pied" / "en avion" (toujours visibles,
+        // contrairement au halo du jour actif qui est redessiné à chaque changement de jour)
+        map.createPane('indicatorPane');
+        map.getPane('indicatorPane').style.zIndex = 440;
+        var indicatorLayer = L.layerGroup().addTo(map);
+
         var markersRegistry = {};
 
         // Fonctions auxiliaires pour générer les boutons de navigation dans les popups
@@ -878,11 +927,26 @@
                         marker.addTo(allAccLayer);
                     } else if (pt.icon === restaurantIcon) {
                         marker.addTo(allRestoLayer);
+                    } else if (pt.icon === sausageIcon) {
+                        marker.addTo(allSausageLayer);
                     } else {
                         marker.addTo(allStepsLayer);
                     }
 
                     markersRegistry[key] = marker;
+
+                    // Indicateur permanent : anneau pointillé pour les points à pied ou en avion
+                    if (pt.onFoot || pt.flight) {
+                        L.circleMarker([pt.lat, pt.lng], {
+                            pane: 'indicatorPane',
+                            radius: 16,
+                            color: pt.onFoot ? '#16a085' : '#3498db',
+                            weight: 2,
+                            dashArray: '4,3',
+                            fill: false,
+                            opacity: 0.85
+                        }).addTo(indicatorLayer);
+                    }
                 }
             });
         });
@@ -1425,10 +1489,16 @@
         var overviewMode = false;
         var overviewBtn = document.getElementById('overviewBtn');
 
+        function getOverviewLabel(active) {
+            var isMobile = window.innerWidth <= 480;
+            if (active) return isMobile ? "❌ Quitter" : "❌ Quitter la vue d'ensemble";
+            return isMobile ? "🗺️ Vue d'ensemble" : "🗺️ Vue d'ensemble (tous les trajets)";
+        }
+
         function exitOverview() {
             overviewMode = false;
             overviewBtn.classList.remove('active');
-            overviewBtn.innerText = "🗺️ Vue d'ensemble (tous les trajets)";
+            overviewBtn.innerText = getOverviewLabel(false);
             map.removeLayer(overviewRouteLayer);
         }
 
@@ -1441,7 +1511,7 @@
 
             overviewMode = true;
             overviewBtn.classList.add('active');
-            overviewBtn.innerText = "❌ Quitter la vue d'ensemble";
+            overviewBtn.innerText = getOverviewLabel(true);
             map.removeLayer(activeRouteLayer);
             overviewRouteLayer.clearLayers();
 
@@ -1495,6 +1565,7 @@
         computeDayCount();
         renderLegendDates();
         updateCountdown();
+        overviewBtn.innerText = getOverviewLabel(false);
     </script>
     <div id="printView"></div>
 
