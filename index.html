@@ -722,7 +722,8 @@
                     { name: "Plage de Boucan Canot", lat: -21.0277948, lng: 55.2259182, icon: blueIcon },
                     { name: "Saint-Paul (Front de mer)", lat: -21.0082928, lng: 55.2694028, icon: blueIcon },
                     { name: "Aéroport Roland Garros (Départ 13h15)", lat: -20.8915972, lng: 55.512241, icon: blueIcon },
-                    { name: "Hôtel Veranda Grand Baie (Maurice, arrivée 14h)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon, flight: true }
+                    { name: "Aéroport Sir Seewoosagur Ramgoolam (Arrivée 14h)", lat: -20.4334615, lng: 57.6787266, icon: yellowIcon, flight: true },
+                    { name: "Hôtel Veranda Grand Baie (Maurice)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
                 ]
             },
             {
@@ -914,6 +915,41 @@
             return null;
         }
 
+        // Découpe les points d'un jour en segments routables séparés par les portions
+        // non routières : les points "onFoot" (rando) sont exclus de tout segment (juste
+        // un marqueur isolé) ; les points "flight" (avion) terminent le segment en cours
+        // et démarrent un nouveau segment à partir de leur position (le trajet en voiture
+        // reprend normalement après l'atterrissage).
+        function getDrivableSegments(points) {
+            var segments = [];
+            var current = [];
+            points.forEach(function(p) {
+                if (p.onFoot) return;
+                if (p.flight) {
+                    if (current.length >= 2) segments.push(current);
+                    current = [p];
+                } else {
+                    current.push(p);
+                }
+            });
+            if (current.length >= 2) segments.push(current);
+            return segments;
+        }
+
+        // Récupère (avec cache) tous les segments routables d'un jour ; retourne un tableau
+        // de trajets OSRM (un par segment continu en voiture).
+        async function fetchDayRoutes(dayIndex, points) {
+            if (routeCache[dayIndex]) return routeCache[dayIndex];
+            var segments = getDrivableSegments(points);
+            var results = [];
+            for (var s of segments) {
+                var r = await fetchOSRMRoute(s);
+                if (r) results.push(r);
+            }
+            routeCache[dayIndex] = results;
+            return results;
+        }
+
         // 3bis. Résumé global du voyage (distance & temps de route cumulés)
         var summaryKmEl = document.getElementById('summaryKm');
         var summaryTimeEl = document.getElementById('summaryTime');
@@ -970,17 +1006,11 @@
 
             for (var i = 0; i < timelineData.length; i++) {
                 var d = timelineData[i];
-                var drivablePoints = d.points.filter(p => !p.onFoot && !p.flight);
-                if (drivablePoints.length < 2) continue;
-                var routeData = routeCache[i];
-                if (!routeData) {
-                    routeData = await fetchOSRMRoute(drivablePoints);
-                    routeCache[i] = routeData;
-                }
-                if (routeData) {
+                var routeDataArr = await fetchDayRoutes(i, d.points);
+                routeDataArr.forEach(function(routeData) {
                     totalKm += routeData.distance / 1000;
                     totalSeconds += routeData.duration;
-                }
+                });
             }
 
             summaryKmEl.innerHTML = `🚗 <b>${Math.round(totalKm)}</b> km`;
@@ -1243,40 +1273,43 @@
                 }
             });
 
-            var drivablePoints = data.points.filter(p => !p.onFoot && !p.flight);
             var footPoints = data.points.filter(p => p.onFoot);
             var flightPoints = data.points.filter(p => p.flight);
 
-            if (drivablePoints.length >= 2) {
-                var routeData = routeCache[index];
-                if (!routeData) {
-                    routeData = await fetchOSRMRoute(drivablePoints);
-                    routeCache[index] = routeData;
-                }
+            var routeDataArr = await fetchDayRoutes(index, data.points);
 
-                if (myToken !== selectionToken) return;
+            if (myToken !== selectionToken) return;
 
-                if (routeData) {
+            if (routeDataArr.length > 0) {
+                var totalKm = 0, totalSeconds = 0;
+
+                routeDataArr.forEach(function(routeData) {
                     var latLngs = routeData.geometry.coordinates.map(c => [c[1], c[0]]);
                     var polyline = L.polyline(latLngs, {
                         color: data.color,
                         weight: 6,
                         opacity: 0.9
                     }).addTo(activeRouteLayer);
+                    polyline.bindPopup(`<b>${data.day}</b><br>🚗 Distance : ${(routeData.distance / 1000).toFixed(1)} km`);
 
-                    var km = (routeData.distance / 1000).toFixed(1);
-                    var durationMinutes = Math.round(routeData.duration / 60);
-                    var h = Math.floor(durationMinutes / 60);
-                    var m = durationMinutes % 60;
-                    var timeStr = h > 0 ? `${h}h${m < 10 ? '0' : ''}${m}` : `${m} min`;
+                    totalKm += routeData.distance / 1000;
+                    totalSeconds += routeData.duration;
+                });
 
-                    var footNote = footPoints.length > 0 ? `<br>🥾 <i>+ portion(s) accessible(s) uniquement à pied</i>` : '';
-                    var flightNote = flightPoints.length > 0 ? `<br>✈️ <i>+ portion(s) en avion</i>` : '';
-                    routeBadge.innerHTML = `🚗 <b>Trajet du jour :</b> ${km} km<br>⏱️ <b>Temps de conduite estimé :</b> ~${timeStr}${footNote}${flightNote}`;
-                    polyline.bindPopup(`<b>${data.day}</b><br>🚗 Distance : ${km} km<br>⏱️ Temps de route : ${timeStr}`);
-                } else {
-                    routeBadge.innerHTML = `⚠️ Trajet routier non disponible.`;
-                }
+                var km = totalKm.toFixed(1);
+                var durationMinutes = Math.round(totalSeconds / 60);
+                var h = Math.floor(durationMinutes / 60);
+                var m = durationMinutes % 60;
+                var timeStr = h > 0 ? `${h}h${m < 10 ? '0' : ''}${m}` : `${m} min`;
+
+                var footNote = footPoints.length > 0 ? `<br>🥾 <i>+ portion(s) accessible(s) uniquement à pied</i>` : '';
+                var flightNote = flightPoints.length > 0 ? `<br>✈️ <i>+ portion(s) en avion</i>` : '';
+                var segmentNote = routeDataArr.length > 1 ? ` (${routeDataArr.length} segments)` : '';
+                routeBadge.innerHTML = `🚗 <b>Trajet du jour :</b> ${km} km${segmentNote}<br>⏱️ <b>Temps de conduite estimé :</b> ~${timeStr}${footNote}${flightNote}`;
+            } else if (footPoints.length > 0 || flightPoints.length > 0) {
+                var footNote2 = footPoints.length > 0 ? `🥾 Accessible uniquement à pied. ` : '';
+                var flightNote2 = flightPoints.length > 0 ? `✈️ Trajet en avion. ` : '';
+                routeBadge.innerHTML = `📍 ${footNote2}${flightNote2}`;
             } else {
                 routeBadge.innerHTML = `📍 Journée sur place / Détente.`;
             }
@@ -1414,20 +1447,14 @@
 
             for (var i = 0; i < timelineData.length; i++) {
                 var d = timelineData[i];
-                var drivablePoints = d.points.filter(p => !p.onFoot && !p.flight);
-                if (drivablePoints.length < 2) continue;
-                var routeData = routeCache[i];
-                if (!routeData) {
-                    routeData = await fetchOSRMRoute(drivablePoints);
-                    routeCache[i] = routeData;
-                }
+                var routeDataArr = await fetchDayRoutes(i, d.points);
                 if (!overviewMode) return; // l'utilisateur a quitté la vue entre-temps
-                if (routeData) {
+                routeDataArr.forEach(function(routeData) {
                     var latLngs = routeData.geometry.coordinates.map(c => [c[1], c[0]]);
                     L.polyline(latLngs, { color: d.color, weight: 4, opacity: 0.75 })
                         .bindPopup(`<b>${d.day}</b> — ${d.title}`)
                         .addTo(overviewRouteLayer);
-                }
+                });
             }
 
             if (!overviewMode) return;
