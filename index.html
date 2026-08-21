@@ -331,7 +331,7 @@
             <label class="filter-item"><input type="checkbox" id="toggleRoutes" checked> 🛣️ Trajet routier du jour</label>
             <label class="filter-item"><input type="checkbox" id="toggleAcc" checked> 🏠 Gîtes & Hébergements</label>
             <label class="filter-item"><input type="checkbox" id="toggleResto" checked> 🍽️ Restaurants & Halte gourmande</label>
-            <label class="filter-item"><input type="checkbox" id="toggleSausage" checked> 🫘 Saucisse & Gastronomie traditionnelle</label>
+            <label class="filter-item"><input type="checkbox" id="toggleSausage" checked> 🌭 Saucisse & Gastronomie traditionnelle</label>
         </div>
 
         <div class="section-title">🗓️ Légende des étapes & icônes</div>
@@ -721,11 +721,15 @@
 
         // Fonctions auxiliaires pour générer les boutons de navigation dans les popups
         function getWazeBtn(lat, lng) {
-            return `<a class="waze-btn" href="https://waze.com/ul?ll=${lat},${lng}&navigate=yes" target="_blank" rel="noopener">🚙 Waze</a>`;
+            // Format officiel Waze Deep Links : www. + virgule encodée + zoom (sinon lien peu fiable)
+            return `<a class="waze-btn" href="https://www.waze.com/ul?ll=${lat}%2C${lng}&navigate=yes&zoom=17" target="_blank" rel="noopener">🚙 Waze</a>`;
         }
 
-        function getGoogleMapsBtn(lat, lng) {
-            return `<a class="gmaps-btn" href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
+        function getGoogleMapsBtn(lat, lng, name) {
+            // Format "place" avec le nom du lieu : ouvre la fiche réelle (avis, horaires...)
+            // plutôt qu'un simple pin GPS anonyme obtenu avec des coordonnées seules.
+            var label = name ? encodeURIComponent(name) : `${lat},${lng}`;
+            return `<a class="gmaps-btn" href="https://www.google.com/maps/place/${label}/@${lat},${lng},17z" target="_blank" rel="noopener">🗺️ Google Maps</a>`;
         }
 
         function getRandoBtn(randoLink) {
@@ -740,8 +744,8 @@
             return btns;
         }
 
-        function getActionButtons(lat, lng, randoLink) {
-            return `<br>${getGoogleMapsBtn(lat, lng)}${getWazeBtn(lat, lng)}${getRandoBtn(randoLink)}`;
+        function getActionButtons(lat, lng, randoLink, name) {
+            return `<br>${getGoogleMapsBtn(lat, lng, name)}${getWazeBtn(lat, lng)}${getRandoBtn(randoLink)}`;
         }
 
         // 1. Afficher TOUS LES POINTS du séjour dès le départ
@@ -753,7 +757,7 @@
                 
                 if (!addedPointsKeys.has(key)) {
                     addedPointsKeys.add(key);
-                    var popupContent = `<b>${d.day}</b><br>📍 <b>${pt.name}</b>${getActionButtons(pt.lat, pt.lng, pt.randoLink)}`;
+                    var popupContent = `<b>${d.day}</b><br>📍 <b>${pt.name}</b>${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
                     var marker = L.marker([pt.lat, pt.lng], { icon: pt.icon })
                         .bindPopup(popupContent);
 
@@ -772,7 +776,7 @@
 
         // 2. Afficher les points Gastronomie & Saucisse
         sausagePoints.forEach(function(pt) {
-            var popupContent = `🌭 <b>${pt.name}</b><br><span style="font-size:12px;">${pt.desc}</span>${getActionButtons(pt.lat, pt.lng, null)}`;
+            var popupContent = `🌭 <b>${pt.name}</b><br><span style="font-size:12px;">${pt.desc}</span>${getActionButtons(pt.lat, pt.lng, null, pt.name)}`;
             var marker = L.marker([pt.lat, pt.lng], { icon: sausageIcon })
                 .bindPopup(popupContent);
             marker.addTo(allSausageLayer);
