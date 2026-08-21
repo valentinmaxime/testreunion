@@ -495,7 +495,6 @@
                     { name: "Aéroport St-Denis (Départ 9h10)", lat: -20.8915972, lng: 55.512241, icon: redIcon },
                     { name: "Cascade Bassin Bœuf", lat: -20.949167, lng: 55.583611, icon: redIcon },
                     { name: "Resto La Cascade Blanche", lat: -20.9993595, lng: 55.5794508, icon: restaurantIcon },
-                    { name: "Hell-Bourg (Musée Musique)", lat: -21.0637609, lng: 55.5186291, icon: redIcon },
                     { name: "Gîte Le Guétali (Grand Îlet)", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
@@ -503,12 +502,13 @@
                 day: "J2 - Mardi 29/09",
                 date: "2026-09-29",
                 theme: "Salazie & Mafate",
-                title: "Gîte Grand Îlet ➔ Rando Mafate ➔ Gîte Grand Îlet",
-                center: [-21.060, 55.460],
+                title: "Gîte Grand Îlet ➔ Hell-Bourg ➔ Rando Mafate ➔ Gîte Grand Îlet",
+                center: [-21.062, 55.470],
                 zoom: 12,
                 color: "#e74c3c",
                 points: [
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon },
+                    { name: "Hell-Bourg (Musée Musique)", lat: -21.0637609, lng: 55.5186291, icon: redIcon },
                     { name: "Col des Bœufs (Parking Rando)", lat: -21.0712355, lng: 55.448285, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
                     { name: "La Nouvelle (Mafate - Rando)", lat: -21.0749944, lng: 55.4229356, icon: hikingIcon, randoLink: RANDO_COL_BOEUFS },
                     { name: "Gîte Le Guétali", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
@@ -611,48 +611,37 @@
                 day: "J9 - Mardi 06/10",
                 date: "2026-10-06",
                 theme: "Côte Ouest & Maïdo",
-                title: "Journée Détente Lagon & Côte Ouest",
-                center: [-21.066, 55.224],
-                zoom: 13,
-                color: "#2980b9",
-                points: [
-                    { name: "Hôtel Le Récif / Plage L'Ermitage", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
-                ]
-            },
-            {
-                day: "J10 - Mercredi 07/10",
-                date: "2026-10-07",
-                theme: "Côte Ouest & Maïdo",
-                title: "Hôtel ➔ Cap Noir (Dos d'Âne) ➔ Boucan Canot ➔ Hôtel",
-                center: [-21.020, 55.300],
+                title: "Hôtel ➔ Cap Noir (Dos d'Âne) ➔ Hôtel",
+                center: [-21.000, 55.335],
                 zoom: 12,
                 color: "#2980b9",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
                     { name: "Cap Noir / Dos d'Âne (Rando 2h)", lat: -20.9930591, lng: 55.3897488, icon: hikingIcon, randoLink: RANDO_CAP_NOIR },
-                    { name: "Plage de Boucan Canot", lat: -21.0277948, lng: 55.2259182, icon: blueIcon },
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
+                ]
+            },
+            {
+                day: "J10 - Mercredi 07/10",
+                date: "2026-10-07",
+                theme: "Île Maurice",
+                title: "Hôtel ➔ Boucan Canot ➔ St-Paul ➔ Aéroport St-Denis ➔ Hôtel Maurice",
+                center: [-20.700, 56.000],
+                zoom: 9,
+                color: "#f1c40f",
+                points: [
+                    { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
+                    { name: "Plage de Boucan Canot", lat: -21.0277948, lng: 55.2259182, icon: blueIcon },
+                    { name: "Saint-Paul (Front de mer)", lat: -21.0082928, lng: 55.2694028, icon: blueIcon },
+                    { name: "Aéroport Roland Garros (Départ 13h15)", lat: -20.8915972, lng: 55.512241, icon: blueIcon },
+                    { name: "Hôtel Veranda Grand Baie (Maurice, arrivée 14h)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
                 ]
             },
             {
                 day: "J11 - Jeudi 08/10",
                 date: "2026-10-08",
                 theme: "Île Maurice",
-                title: "Hôtel St-Gilles ➔ Aéroport St-Denis ➔ Hôtel Maurice",
-                center: [-20.500, 56.500],
-                zoom: 9,
-                color: "#f1c40f",
-                points: [
-                    { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
-                    { name: "Aéroport Roland Garros (Vol 14h)", lat: -20.8915972, lng: 55.512241, icon: blueIcon },
-                    { name: "Hôtel Veranda Grand Baie (Maurice)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
-                ]
-            },
-            {
-                day: "J12 - Vendredi 09/10",
-                date: "2026-10-09",
-                theme: "Île Maurice",
-                title: "Hôtel Grand Baie ➔ Château Labourdonnais ➔ Hôtel",
+                title: "Plages ➔ Château de Labourdonnais ➔ Hôtel",
                 center: [-20.040, 57.570],
                 zoom: 12,
                 color: "#f1c40f",
@@ -663,8 +652,8 @@
                 ]
             },
             {
-                day: "J13 - Samedi 10/10",
-                date: "2026-10-10",
+                day: "J12 - Vendredi 09/10",
+                date: "2026-10-09",
                 theme: "Île Maurice",
                 title: "Hôtel Grand Baie ➔ Jardin Pamplemousses & Sucre ➔ Hôtel",
                 center: [-20.060, 57.580],
@@ -675,6 +664,19 @@
                     { name: "Jardin Botanique de Pamplemousses", lat: -20.1070516, lng: 57.5797065, icon: yellowIcon },
                     { name: "L'Aventure du Sucre", lat: -20.0979509, lng: 57.5743829, icon: yellowIcon },
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
+                ]
+            },
+            {
+                day: "J13 - Samedi 10/10",
+                date: "2026-10-10",
+                theme: "Île Maurice",
+                title: "Massages ➔ Aéroport Maurice (Départ 19h55)",
+                center: [-20.220, 57.630],
+                zoom: 9,
+                color: "#f1c40f",
+                points: [
+                    { name: "Hôtel Veranda Grand Baie (Massages)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon },
+                    { name: "Aéroport Sir Seewoosagur Ramgoolam (Départ 19h55)", lat: -20.4334615, lng: 57.6787266, icon: yellowIcon }
                 ]
             }
         ];
