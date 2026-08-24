@@ -443,6 +443,7 @@
                     </svg>
                     Saucisse & Gastronomie traditionnelle
                 </label>
+                <label class="filter-item"><input type="checkbox" id="toggleTbd" checked> ❓ Activités à définir</label>
             </div>
         </details>
 
@@ -478,6 +479,7 @@
                 </div>
                 <div><span class="legend-dashed" style="border-color:#16a085;"></span> Accessible uniquement à pied</div>
                 <div><span class="legend-dashed" style="border-color:#3498db;"></span> Accessible en avion</div>
+                <div>❓ Activité à définir (lieu approximatif : voir horaire dans la popup)</div>
             </div>
         </details>
     </div>
@@ -489,10 +491,13 @@
         L.control.zoom({ position: 'topright' }).addTo(map);
 
         // Fonds de carte disponibles
-        var streetLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 19
+        // Note : Geoapify (service commercial, palier gratuit ~360 000 tuiles/mois) avec le
+        // paramètre lang=fr qui force l'affichage en français sur toutes les tuiles — même
+        // solution retenue sur la carte Blois, plus fiable qu'un service communautaire.
+        var GEOAPIFY_API_KEY = 'fde2296c330d47ae9ab354513e51feb9';
+        var streetLayer = L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?lang=fr&apiKey=${GEOAPIFY_API_KEY}`, {
+            attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; OpenStreetMap contributors',
+            maxZoom: 20
         }).addTo(map);
 
         var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -500,6 +505,8 @@
             maxZoom: 19
         });
 
+        // Relief conservé (contrairement à la carte Blois) : ce voyage comporte de vraies
+        // randos (Mafate, Fournaise, Piton Cabri, Cap Noir...) où le relief est utile.
         var reliefLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)',
             subdomains: 'abc',
@@ -579,6 +586,19 @@
         var blueIcon = createIcon('blue');
         var yellowIcon = createIcon('yellow');
 
+        // Icône "activité(s) à définir" : cercle pointillé + point d'interrogation, pour
+        // signaler sur la carte les activités sans lieu précis, sans inventer de coordonnées
+        // exactes non vérifiées (même mécanisme que sur la carte Blois).
+        var rawTbdSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="34" height="34">
+            <circle cx="32" cy="32" r="27" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="3" stroke-dasharray="5,4"/>
+            <text x="32" y="43" font-size="32" font-family="Arial, sans-serif" font-weight="bold" fill="#7f8c8d" text-anchor="middle">?</text>
+        </svg>`;
+        var tbdSvg = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(rawTbdSvg);
+        var tbdIcon = L.icon({
+            iconUrl: tbdSvg,
+            iconSize: [34, 34], iconAnchor: [17, 17], popupAnchor: [0, -15]
+        });
+
         // Adresses / Gîtes repères
         var GITE_GUETALI = { name: "Gîte Le Guétali", lat: -21.0328503, lng: 55.4741783 };
         var GITE_ARBRE_VIE = { name: "Gîte L'Arbre de Vie", lat: -21.371321, lng: 55.6733009 };
@@ -589,10 +609,6 @@
         var RANDO_COL_BOEUFS = {
             visorando: "https://www.visorando.com/randonnee-col-des-boeufs-vers-la-nouvelle-et-retou/",
             randopitons: "https://randopitons.re/randonnee/1271-col-ufs-nouvelle-retour"
-        };
-        var RANDO_CAP_NOIR = {
-            visorando: "https://www.visorando.com/en/walk-roche-verre-bouteille/",
-            randopitons: "https://randopitons.re/randonnee/1402-cap-noir-roche-verre-bouteille-depuis-dos-ane"
         };
         var RANDO_FOURNAISE = {
             visorando: "https://www.visorando.com/en/walk-piton-de-la-fournaise.html",
@@ -610,8 +626,7 @@
                 zoom: 11,
                 color: "#e74c3c",
                 points: [
-                    { name: "Aéroport St-Denis (Départ 9h10)", lat: -20.8915972, lng: 55.512241, icon: redIcon },
-                    { name: "Distillerie Savanna (Ste-Suzanne)", lat: -20.9161837, lng: 55.6377667, icon: redIcon },
+                    { name: "Aéroport St-Denis (Départ 9h10)", time: "09h10", lat: -20.8915972, lng: 55.512241, icon: redIcon },
                     { name: "Cascade Bassin Bœuf", lat: -20.949167, lng: 55.583611, icon: redIcon },
                     { name: "Temple du Colosse (St-André)", lat: -20.9367287, lng: 55.6716746, icon: redIcon },
                     { name: "Resto La Cascade Blanche", lat: -20.9993595, lng: 55.5794508, icon: restaurantIcon },
@@ -651,7 +666,6 @@
                     { name: "Coulées de Lave (Grands Brûlés)", lat: -21.2290632, lng: 55.804072, icon: orangeIcon },
                     { name: "Cap Méchant", lat: -21.3756533, lng: 55.7107871, icon: orangeIcon },
                     { name: "Puits des Anglais", lat: -21.3692839, lng: 55.7325253, icon: orangeIcon },
-                    { name: "Cascade de la Grande Ravine (Baignade)", lat: -21.3295755, lng: 55.6423992, icon: orangeIcon },
                     { name: "Cascade de Grand Galet", lat: -21.3116237, lng: 55.6418507, icon: orangeIcon },
                     { name: "Gîte L'Arbre de Vie (Vincendo)", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
@@ -660,14 +674,16 @@
                 day: "J4 - Jeudi 01/10",
                 date: "2026-10-01",
                 theme: "Piton de la Fournaise",
-                title: "Gîte Vincendo ➔ Piton de la Fournaise ➔ Gîte Vincendo",
+                title: "Gîte Vincendo ➔ Cratère Commerson ➔ Piton de la Fournaise (Plaine des Sables) ➔ Gîte Vincendo",
                 center: [-21.230, 55.660],
                 zoom: 11,
                 color: "#8e44ad",
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
+                    { name: "Cratère Commerson", lat: -21.2079888, lng: 55.6417072, icon: violetIcon },
                     { name: "Bourg-Murat / Plaine des Cafres", lat: -21.2012119, lng: 55.5780219, icon: violetIcon },
                     { name: "Gîte du Volcan (Déjeuner)", lat: -21.2171853, lng: 55.6871847, icon: restaurantIcon },
+                    { name: "Point de vue de la Plaine des Sables", lat: -21.2315663, lng: 55.6486864, icon: violetIcon },
                     { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.2222188, lng: 55.6894317, icon: hikingIcon, randoLink: RANDO_FOURNAISE },
                     { name: "Formica Leo (Enclos Fouqué)", lat: -21.223859, lng: 55.692042, icon: violetIcon, onFoot: true },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
@@ -676,14 +692,13 @@
             {
                 day: "J5 - Vendredi 02/10",
                 date: "2026-10-02",
-                theme: "Cilaos & Les Makes",
-                title: "Gîte Vincendo ➔ Cirque de Cilaos ➔ Les Makes ➔ Gîte Vincendo",
-                center: [-21.200, 55.480],
-                zoom: 11,
+                theme: "Les Makes",
+                title: "Gîte Vincendo ➔ Les Makes ➔ Gîte Vincendo",
+                center: [-21.195, 55.430],
+                zoom: 12,
                 color: "#27ae60",
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
-                    { name: "Cirque de Cilaos (Route des 400 virages)", lat: -21.1427529, lng: 55.4639974, icon: greenIcon },
                     { name: "Les Makes (Belvédère de la Fenêtre)", lat: -21.1853877, lng: 55.4330234, icon: greenIcon },
                     { name: "Observatoire Astronomique des Makes", lat: -21.1997421, lng: 55.4090289, icon: greenIcon },
                     { name: "Piton Cabri (Rando 4h)", lat: -21.189784, lng: 55.437011, icon: hikingIcon, onFoot: true },
@@ -701,7 +716,7 @@
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
                     { name: "Marché Forain de St-Pierre", lat: -21.3399311, lng: 55.4597428, icon: sausageIcon },
-                    { name: "Saga des Rhums (Isautier)", lat: -21.3123309, lng: 55.4657345, icon: blueIcon },
+                    { name: "Saga des Rhums (Isautier)", lat: -21.3123309, lng: 55.4657345, icon: blueIcon, note: "Pass dégustation à réserver + prendre la confiture crème de banane (pour Mélanie)" },
                     { name: "Domaine du Café Grillé", lat: -21.306886, lng: 55.423972, icon: blueIcon },
                     { name: "Plage de l'Étang-Salé", lat: -21.2622774, lng: 55.3320837, icon: blueIcon },
                     { name: "Hôtel Le Récif (St-Gilles)", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
@@ -717,7 +732,7 @@
                 color: "#2980b9",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
-                    { name: "Piton Maïdo (Vue 6h00)", lat: -21.068889, lng: 55.387778, icon: blueIcon },
+                    { name: "Piton Maïdo (Vue 6h00)", time: "06h00", lat: -21.068889, lng: 55.387778, icon: blueIcon },
                     { name: "Base ULM de Cambaie (St-Paul)", lat: -20.9626795, lng: 55.2818563, icon: blueIcon },
                     { name: "Hôtel Le Récif (Lagon)", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
@@ -742,13 +757,13 @@
                 day: "J9 - Mardi 06/10",
                 date: "2026-10-06",
                 theme: "Côte Ouest & Maïdo",
-                title: "Hôtel ➔ Cap Noir (Dos d'Âne) ➔ Hôtel",
-                center: [-21.000, 55.335],
-                zoom: 12,
+                title: "Hôtel ➔ Plage de l'Hermitage (Baignade & snorkeling) ➔ Hôtel",
+                center: [-21.079, 55.222],
+                zoom: 13,
                 color: "#2980b9",
                 points: [
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
-                    { name: "Cap Noir / Dos d'Âne (Rando 2h)", lat: -20.9930591, lng: 55.3897488, icon: hikingIcon, randoLink: RANDO_CAP_NOIR, onFoot: true },
+                    { name: "Plage de l'Hermitage", lat: -21.0794928, lng: 55.222319, icon: blueIcon, note: "Sentier du Cap Noir / Dos d'Âne remplacé : fermé depuis 2024 (éboulis), sans date de réouverture. Lagon protégé par le récif, idéal snorkeling." },
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
             },
@@ -764,8 +779,8 @@
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
                     { name: "Plage de Boucan Canot", lat: -21.0277948, lng: 55.2259182, icon: blueIcon },
                     { name: "Saint-Paul (Front de mer)", lat: -21.0082928, lng: 55.2694028, icon: blueIcon },
-                    { name: "Aéroport Roland Garros (Départ 13h15)", lat: -20.8915972, lng: 55.512241, icon: blueIcon },
-                    { name: "Aéroport Sir Seewoosagur Ramgoolam (Arrivée 14h)", lat: -20.4334615, lng: 57.6787266, icon: yellowIcon, flight: true },
+                    { name: "Aéroport Roland Garros (Départ 13h15)", time: "13h15", lat: -20.8915972, lng: 55.512241, icon: blueIcon },
+                    { name: "Aéroport Sir Seewoosagur Ramgoolam (Arrivée 14h)", time: "14h00", lat: -20.4334615, lng: 57.6787266, icon: yellowIcon, flight: true },
                     { name: "Hôtel Veranda Grand Baie (Maurice)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
                 ]
             },
@@ -808,7 +823,7 @@
                 color: "#f1c40f",
                 points: [
                     { name: "Hôtel Veranda Grand Baie (Massages)", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon },
-                    { name: "Aéroport Sir Seewoosagur Ramgoolam (Départ 19h55)", lat: -20.4334615, lng: 57.6787266, icon: yellowIcon }
+                    { name: "Aéroport Sir Seewoosagur Ramgoolam (Départ 19h55)", time: "19h55", lat: -20.4334615, lng: 57.6787266, icon: yellowIcon }
                 ]
             }
         ];
@@ -847,6 +862,7 @@
         var allAccLayer = L.layerGroup().addTo(map);
         var allRestoLayer = L.layerGroup().addTo(map);
         var allSausageLayer = L.layerGroup().addTo(map);
+        var allTbdLayer = L.layerGroup().addTo(map);
         var activeRouteLayer = L.layerGroup().addTo(map);
 
         // Pane dédié pour les halos de mise en avant du jour actif (sous les icônes, au-dessus des tuiles)
@@ -899,14 +915,20 @@
         }
 
         // 1. Afficher TOUS LES POINTS du séjour dès le départ
-        // On regroupe d'abord les jours par point (un gîte utilisé 3 jours doit afficher les 3, pas juste le premier)
-        var pointDaysMap = {};
+        // On regroupe d'abord les occurrences par point (jour + nom + horaire). Un gîte utilisé
+        // plusieurs jours pour la même chose n'a qu'un seul marqueur avec tous les jours listés ;
+        // mais si un même lieu sert à des fins différentes selon le jour (ex. un aéroport où l'on
+        // arrive un jour et d'où l'on repart un autre jour, avec un nom/horaire différent), la
+        // popup détaille chaque jour séparément au lieu d'afficher le nom du premier jour pour tous.
+        var pointOccurrences = {};
         timelineData.forEach(function(d) {
             d.points.forEach(function(pt) {
                 var key = `${pt.lat.toFixed(4)}_${pt.lng.toFixed(4)}`;
-                if (!pointDaysMap[key]) pointDaysMap[key] = [];
+                if (!pointOccurrences[key]) pointOccurrences[key] = [];
                 var shortDay = d.day.split(' - ')[0]; // "J1 - Lundi 28/09" → "J1"
-                if (pointDaysMap[key].indexOf(shortDay) === -1) pointDaysMap[key].push(shortDay);
+                if (!pointOccurrences[key].some(o => o.day === shortDay)) {
+                    pointOccurrences[key].push({ day: shortDay, name: pt.name, time: pt.time });
+                }
             });
         });
 
@@ -918,8 +940,23 @@
                 
                 if (!addedPointsKeys.has(key)) {
                     addedPointsKeys.add(key);
-                    var daysLabel = pointDaysMap[key].join(', ');
-                    var popupContent = `<b>${daysLabel}</b><br>📍 <b>${pt.name}</b>${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
+                    var occurrences = pointOccurrences[key];
+                    var daysLabel = occurrences.map(o => o.day).join(', ');
+                    var noteHtml = pt.note ? `<br><span style="font-size:11px; color:#555;">📝 ${pt.note}</span>` : '';
+                    var sameNameEveryDay = occurrences.every(o => o.name === occurrences[0].name);
+
+                    var popupContent;
+                    if (sameNameEveryDay) {
+                        popupContent = `<b>${daysLabel}</b><br>📍 <b>${pt.name}</b>${noteHtml}${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
+                    } else {
+                        // Le lieu sert à des fins différentes selon le jour : détail jour par jour
+                        var breakdown = occurrences.map(function(o) {
+                            var timeLabel = o.time ? ` (${o.time})` : '';
+                            return `<b>${o.day}</b>${timeLabel} : ${o.name}`;
+                        }).join('<br>');
+                        popupContent = `📍 ${breakdown}${noteHtml}${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
+                    }
+
                     var marker = L.marker([pt.lat, pt.lng], { icon: pt.icon })
                         .bindPopup(popupContent);
 
@@ -949,6 +986,23 @@
                     }
                 }
             });
+        });
+
+        // 1bis. Indicateur "activité(s) à définir" : un marqueur par jour concerné, positionné
+        // au centre approximatif de la zone du jour (pas de coordonnées précises inventées),
+        // avec une popup qui liste les activités et leurs horaires (port depuis la carte Blois).
+        timelineData.forEach(function(d) {
+            if (!d.extras || d.extras.length === 0) return;
+            var listHtml = d.extras.map(function(ex) {
+                var timeLabel = ex.time ? `<b>${ex.time}</b> : ` : '';
+                return `<li>${timeLabel}${ex.name}</li>`;
+            }).join('');
+            var popupContent = `<b>${d.day}</b><br>❓ <b>Activité(s) à définir</b><br>` +
+                `<span style="font-size:11px;">Emplacement approximatif (zone du jour) : lieu exact à confirmer</span>` +
+                `<ul style="margin:4px 0 0 16px; padding:0; font-size:12px;">${listHtml}</ul>`;
+            L.marker(d.center, { icon: tbdIcon })
+                .bindPopup(popupContent)
+                .addTo(allTbdLayer);
         });
 
         // 2. Afficher les points Gastronomie & Saucisse
@@ -983,12 +1037,14 @@
         // non routières : les points "onFoot" (rando) sont exclus de tout segment (juste
         // un marqueur isolé) ; les points "flight" (avion) terminent le segment en cours
         // et démarrent un nouveau segment à partir de leur position (le trajet en voiture
-        // reprend normalement après l'atterrissage).
+        // reprend normalement après l'atterrissage). Les points "excludeFromRoute" (visite
+        // optionnelle/alternative, port depuis la carte Blois) sont eux aussi exclus du calcul,
+        // pour ne pas fausser la distance/temps avec une visite qui ne sera pas forcément faite.
         function getDrivableSegments(points) {
             var segments = [];
             var current = [];
             points.forEach(function(p) {
-                if (p.onFoot) return;
+                if (p.onFoot || p.excludeFromRoute) return;
                 if (p.flight) {
                     if (current.length >= 2) segments.push(current);
                     current = [p];
@@ -1310,7 +1366,9 @@
             // Cadrage automatique sur tous les points du jour (au lieu d'un centre/zoom fixe),
             // pour qu'un point excentré (ex. un détour avant l'étape principale) reste toujours visible.
             if (data.points.length > 0) {
-                var bounds = L.latLngBounds(data.points.map(p => [p.lat, p.lng]));
+                var boundsCoords = data.points.map(p => [p.lat, p.lng]);
+                if (data.extras && data.extras.length > 0) boundsCoords.push(data.center);
+                var bounds = L.latLngBounds(boundsCoords);
                 map.flyToBounds(bounds, { padding: [50, 50], maxZoom: data.zoom, duration: 1.0 });
             } else {
                 map.flyTo(data.center, data.zoom, { duration: 1.0 });
@@ -1454,6 +1512,9 @@
         document.getElementById('toggleSausage').addEventListener('change', function(e) {
             if(e.target.checked) map.addLayer(allSausageLayer); else map.removeLayer(allSausageLayer);
         });
+        document.getElementById('toggleTbd').addEventListener('change', function(e) {
+            if(e.target.checked) map.addLayer(allTbdLayer); else map.removeLayer(allTbdLayer);
+        });
 
         // Compte à rebours avant le départ / statut du voyage
         function updateCountdown() {
@@ -1536,7 +1597,20 @@
 
         overviewBtn.addEventListener('click', toggleOverview);
 
-        // Vue imprimable / export PDF : génère une feuille de route texte complète
+        // Convertit un horaire ("9h10", "17h00 - 00h00"...) en minutes depuis 00h00, pour
+        // trier les activités d'une journée dans l'ordre chronologique. On se base sur l'heure
+        // de début de chaque créneau ; les horaires manquants sont envoyés en fin de liste.
+        // (port depuis la carte Blois)
+        function timeSortKey(str) {
+            if (!str) return 9999;
+            var m = str.match(/(\d{1,2})h(\d{2})/);
+            if (!m) return 9999;
+            return parseInt(m[1]) * 60 + parseInt(m[2]);
+        }
+
+        // Vue imprimable / export PDF : génère une feuille de route texte complète, avec
+        // horaires quand ils sont connus. Fusionne les points géolocalisés et les activités
+        // sans lieu précis (extras) dans une seule liste triée par heure (port depuis Blois).
         function renderPrintView() {
             var html = `<h1>🧭 Voyage Réunion & Maurice — Feuille de route</h1>`;
             timelineData.forEach(function(d) {
@@ -1544,10 +1618,19 @@
                 html += `<div class="print-day-title">${d.day} — ${d.title}</div>`;
                 html += `<div class="print-day-theme">${d.theme}</div>`;
                 html += `<ul>`;
-                d.points.forEach(function(p) {
-                    var footTag = p.onFoot ? ' (accessible à pied uniquement)' : '';
-                    html += `<li${p.onFoot ? ' class="on-foot"' : ''}>${p.name}${footTag}</li>`;
+
+                var items = d.points.map(function(p) {
+                    return { time: p.time, name: p.name, onFoot: p.onFoot };
                 });
+                if (d.extras) items = items.concat(d.extras);
+                items.sort(function(a, b) { return timeSortKey(a.time) - timeSortKey(b.time); });
+
+                items.forEach(function(item) {
+                    var timeLabel = item.time ? `<b>${item.time}</b> : ` : '';
+                    var footTag = item.onFoot ? ' (accessible à pied uniquement)' : '';
+                    html += `<li${item.onFoot ? ' class="on-foot"' : ''}>${timeLabel}${item.name}${footTag}</li>`;
+                });
+
                 html += `</ul></div>`;
             });
             document.getElementById('printView').innerHTML = html;
