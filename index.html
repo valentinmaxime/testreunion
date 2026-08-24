@@ -548,6 +548,7 @@
                 </div>
                 <div><span class="legend-dashed" style="border-color:#16a085;"></span> Accessible uniquement à pied</div>
                 <div><span class="legend-dashed" style="border-color:#3498db;"></span> Accessible en avion</div>
+                <div><span class="legend-dashed" style="border-color:#e67e22;"></span> Visite optionnelle (selon temps/envie)</div>
                 <div>❓ Activité à définir (lieu approximatif : voir horaire dans la popup)</div>
             </div>
         </details>
@@ -699,7 +700,7 @@
                     { name: "Cascade Bassin Bœuf", lat: -20.949167, lng: 55.583611, icon: redIcon },
                     { name: "Temple du Colosse (St-André)", lat: -20.9367287, lng: 55.6716746, icon: redIcon },
                     { name: "Resto La Cascade Blanche", lat: -20.9993595, lng: 55.5794508, icon: restaurantIcon },
-                    { name: "Cascade Voile de la Mariée (Rando 1h30 AR)", lat: -21.0398724, lng: 55.5380261, icon: hikingIcon, onFoot: true },
+                    { name: "Cascade Voile de la Mariée (Rando 1h30 AR)", lat: -21.0398724, lng: 55.5380261, icon: hikingIcon, onFoot: true, optional: true },
                     { name: "Gîte Le Guétali (Grand Îlet)", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
@@ -754,7 +755,7 @@
                     { name: "Gîte du Volcan (Déjeuner)", lat: -21.2171853, lng: 55.6871847, icon: restaurantIcon },
                     { name: "Point de vue de la Plaine des Sables", lat: -21.2315663, lng: 55.6486864, icon: violetIcon },
                     { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.2222188, lng: 55.6894317, icon: hikingIcon, randoLink: RANDO_FOURNAISE },
-                    { name: "Formica Leo (Enclos Fouqué)", lat: -21.223859, lng: 55.692042, icon: violetIcon, onFoot: true },
+                    { name: "Formica Leo (Enclos Fouqué)", lat: -21.223859, lng: 55.692042, icon: violetIcon, onFoot: true, optional: true, note: "Le Word mentionne une option de rando plus longue depuis Pas de Bellecombe (jusqu'à 3h) selon forme/météo." },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -818,7 +819,7 @@
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon },
                     { name: "Plage de la Saline", lat: -21.0976687, lng: 55.2386044, icon: blueIcon },
                     { name: "Jardin d'Éden", lat: -21.0771788, lng: 55.2289407, icon: blueIcon },
-                    { name: "Saint-Leu (Front de mer & Parapente)", lat: -21.151484, lng: 55.278727, icon: blueIcon },
+                    { name: "Saint-Leu (Front de mer & Parapente)", lat: -21.151484, lng: 55.278727, icon: blueIcon, optional: true, note: "Activité pas encore tranchée : parapente, ULM (voir aussi la base de Cambaie au J7) ou hélicoptère selon le Word." },
                     { name: "Hôtel Le Récif", lat: HOTEL_RECIF.lat, lng: HOTEL_RECIF.lng, icon: houseIcon }
                 ]
             },
@@ -863,7 +864,7 @@
                 color: "#f1c40f",
                 points: [
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon },
-                    { name: "Château de Labourdonnais", lat: -20.0735467, lng: 57.6176141, icon: yellowIcon },
+                    { name: "Château de Labourdonnais", lat: -20.0735467, lng: 57.6176141, icon: yellowIcon, optional: true },
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
                 ]
             },
@@ -877,8 +878,8 @@
                 color: "#f1c40f",
                 points: [
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon },
-                    { name: "Jardin Botanique de Pamplemousses", lat: -20.1070516, lng: 57.5797065, icon: yellowIcon },
-                    { name: "L'Aventure du Sucre", lat: -20.0979509, lng: 57.5743829, icon: yellowIcon },
+                    { name: "Jardin Botanique de Pamplemousses", lat: -20.1070516, lng: 57.5797065, icon: yellowIcon, optional: true },
+                    { name: "L'Aventure du Sucre", lat: -20.0979509, lng: 57.5743829, icon: yellowIcon, optional: true },
                     { name: "Hôtel Veranda Grand Baie", lat: HOTEL_VERANDA.lat, lng: HOTEL_VERANDA.lng, icon: houseIcon }
                 ]
             },
@@ -1049,6 +1050,21 @@
                             color: pt.onFoot ? '#16a085' : '#3498db',
                             weight: 2,
                             dashArray: '4,3',
+                            fill: false,
+                            opacity: 0.85
+                        }).addTo(indicatorLayer);
+                    }
+
+                    // Indicateur permanent : anneau ambre pour les visites "OPTION" du programme
+                    // (selon temps/forme/envie) — anneau plus large pour s'emboîter proprement
+                    // autour de l'anneau à pied/avion si le point cumule les deux indicateurs.
+                    if (pt.optional) {
+                        L.circleMarker([pt.lat, pt.lng], {
+                            pane: 'indicatorPane',
+                            radius: 21,
+                            color: '#e67e22',
+                            weight: 2,
+                            dashArray: '3,4',
                             fill: false,
                             opacity: 0.85
                         }).addTo(indicatorLayer);
@@ -1632,6 +1648,12 @@
             overviewBtn.classList.remove('active');
             overviewBtn.innerText = getOverviewLabel(false);
             map.removeLayer(overviewRouteLayer);
+            // Bug corrigé : toggleOverview() détache activeRouteLayer de la carte en entrant
+            // dans la vue d'ensemble (map.removeLayer), mais ne le rattachait jamais en sortant —
+            // les trajets étaient bien redessinés dans le calque par selectDay(), mais dans un
+            // calque qui n'était plus posé sur la carte, donc invisible. On respecte l'état de
+            // la case "Trajet routier du jour" plutôt que de le forcer à true.
+            if (document.getElementById('toggleRoutes').checked) map.addLayer(activeRouteLayer);
         }
 
         async function toggleOverview() {
