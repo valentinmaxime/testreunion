@@ -493,7 +493,6 @@
             }
             #printView .print-meta b { font-weight: 700; }
             #printView .print-meta span i { font-style: normal; color: #666; }
-            #printView .print-planb { margin-top: 6pt; font-size: 9.5pt; color: #444; }
             #printView .print-day-title { font-size: 14pt; font-weight: 700; letter-spacing: -.02em; }
             #printView .print-day-theme {
                 font-size: 8pt; font-weight: 700; letter-spacing: .12em;
@@ -1809,40 +1808,8 @@
         // ---------- Outils partagés (distances, index de lieux, réservations, plan B) ----------
         function ptKey(p) { return p.lat.toFixed(4) + '_' + p.lng.toFixed(4); }
 
-        function haversineKm(a, b) {
-            var R = 6371, dLat = (b[0] - a[0]) * Math.PI / 180, dLng = (b[1] - a[1]) * Math.PI / 180;
-            var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            return 2 * R * Math.asin(Math.sqrt(s));
-        }
-
         function deaccent(s) {
             return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        }
-
-        // Lieux couverts (donc visitables sous la pluie) déjà présents dans l'itinéraire :
-        // on ne propose jamais un repli inventé, seulement une étape existante du voyage.
-        var INDOOR_RE = /mus[ée]e|distiller|rhum|saga|aventure du sucre|caf[ée]|march[ée]|jardin|observatoire|ch[âa]teau|temple|usine|aquarium|centre|boutique/i;
-
-        // Un jour "exposé" = au moins une rando ou un point accessible à pied.
-        function dayNeedsPlanB(d) {
-            return (d.points || []).some(p => p.onFoot || p.icon === hikingIcon || p.randoLink);
-        }
-
-        function findPlanB(dayIndex) {
-            var d = timelineData[dayIndex];
-            if (!dayNeedsPlanB(d)) return null;
-            var own = new Set((d.points || []).map(ptKey));
-            var best = null;
-            timelineData.forEach(function(other) {
-                (other.points || []).forEach(function(p) {
-                    if (own.has(ptKey(p)) || !INDOOR_RE.test(p.name)) return;
-                    var km = haversineKm(d.center, [p.lat, p.lng]);
-                    if (km > 45) return; // rester dans la zone du jour
-                    if (!best || km < best.km) best = { name: p.name, km: km };
-                });
-            });
-            return best;
         }
 
         // Tout ce qui demande une réservation : détecté sur les notes (« à réserver », « pass »…)
@@ -1999,34 +1966,14 @@
                 map.flyTo(data.center, data.zoom, { duration: 1.0 });
             }
 
-            // Fiche jour : nuit sur place, heure de départ conseillée, repli en cas de pluie.
-            var advSunrise = null, advDrivingMin = null;
+            // Fiche jour : nuit sur place uniquement (départ conseillé et plan B pluie retirés).
             var stay = (data.points || []).filter(p => p.icon === houseIcon).slice(-1)[0];
-            var firstTimed = (data.points || []).find(p => p.time);
-            var planB = findPlanB(index);
 
             function paintDayExtra() {
                 if (myToken !== selectionToken) return;
                 var rows = '';
                 if (stay) {
                     rows += '<div class="dx-item"><div class="dx-k">Nuit sur place</div><div class="dx-v">' + stay.name + '</div></div>';
-                }
-                var depart = '', departNote = '';
-                if (firstTimed) {
-                    depart = firstTimed.time;
-                    departNote = 'horaire prévu · ' + firstTimed.name;
-                } else if (advSunrise) {
-                    depart = addMinutes(advSunrise, 45);
-                    departNote = 'suggestion : 45 min après le lever du soleil (' + advSunrise + ')';
-                    if (advDrivingMin !== null && advDrivingMin >= 90) {
-                        departNote += ' · ' + Math.round(advDrivingMin) + ' min de route';
-                    }
-                }
-                if (depart) {
-                    rows += '<div class="dx-item"><div class="dx-k">Départ conseillé</div><div class="dx-v">' + depart + '<small>' + departNote + '</small></div></div>';
-                }
-                if (planB) {
-                    rows += '<div class="dx-item"><div class="dx-k">Plan B pluie</div><div class="dx-v">' + planB.name + '<small>abrité · à ' + planB.km.toFixed(0) + ' km de la zone du jour</small></div></div>';
                 }
                 dayExtra.innerHTML = rows;
             }
@@ -2048,8 +1995,6 @@
                 if (myToken !== selectionToken) return;
                 if (s) {
                     sunBadge.innerHTML = `<span class="wv">${s.sunrise} → ${s.sunset}</span><span class="wl">lever · coucher</span>`;
-                    advSunrise = s.sunrise;
-                    paintDayExtra();
                 } else {
                     sunBadge.innerHTML = `<span class="wl">horaires indisponibles</span>`;
                 }
@@ -2090,8 +2035,6 @@
                 var longAlert = durationMinutes >= 120
                     ? `<div class="rb-alert">⚠ Plus de 2 h de route : prévoir des pauses et partir tôt</div>` : '';
                 routeBadge.innerHTML = `<div class="rb-main"><b>${km} km</b><span class="rb-dot"></span><b>~${timeStr}</b> de conduite${segmentNote}</div>${footNote}${flightNote}${longAlert}`;
-                advDrivingMin = durationMinutes;
-                paintDayExtra();
             } else if (footPoints.length > 0 || flightPoints.length > 0) {
                 var footNote2 = footPoints.length > 0 ? `🥾 Accessible uniquement à pied. ` : '';
                 var flightNote2 = flightPoints.length > 0 ? `✈️ Trajet en avion. ` : '';
@@ -2250,7 +2193,7 @@
                 (d.points || []).forEach(function(p) {
                     var k = ptKey(p);
                     if (seen[k]) { seen[k].days.push(d.day.split(' - ')[0]); return; }
-                    var entry = { key: k, name: p.name, dayIndex: i, days: [d.day.split(' - ')[0]], theme: d.theme, hay: deaccent(p.name + ' ' + d.theme) };
+                    var entry = { key: k, name: p.name, dayIndex: i, days: [d.day.split(' - ')[0]], theme: d.theme, hayName: deaccent(p.name), hayTheme: deaccent(d.theme) };
                     seen[k] = entry;
                     searchIndex.push(entry);
                 });
@@ -2259,7 +2202,7 @@
                 sausagePoints.forEach(function(p) {
                     var k = ptKey(p);
                     if (seen[k]) return;
-                    var entry = { key: k, name: p.name, dayIndex: null, days: ['Gastronomie'], theme: 'Rougail saucisse', hay: deaccent(p.name) };
+                    var entry = { key: k, name: p.name, dayIndex: null, days: ['Gastronomie'], theme: 'Rougail saucisse', hayName: deaccent(p.name), hayTheme: '' };
                     seen[k] = entry;
                     searchIndex.push(entry);
                 });
@@ -2272,7 +2215,21 @@
             var needle = deaccent(q.trim());
             searchField.classList.toggle('filled', q.length > 0);
             if (needle.length < 2) { closeSearch(); return; }
-            var hits = searchIndex.filter(e => e.hay.indexOf(needle) >= 0).slice(0, 8);
+            // Classement par pertinence : le nom du lieu compte plus que le thème du jour
+            // (ex. taper "Maïdo" doit remonter "Piton Maïdo" avant les autres étapes du J6/J7
+            // qui ne matchent que parce que leur thème contient "Maïdo").
+            var hits = searchIndex.map(function(e) {
+                var idxName = e.hayName.indexOf(needle);
+                var score;
+                if (idxName === 0) score = 0;
+                else if (idxName > 0) score = 1;
+                else if (e.hayTheme.indexOf(needle) >= 0) score = 2;
+                else score = -1;
+                return { e: e, score: score };
+            }).filter(function(x) { return x.score >= 0; })
+              .sort(function(a, b) { return a.score - b.score || a.e.name.length - b.e.name.length; })
+              .slice(0, 8)
+              .map(function(x) { return x.e; });
             if (hits.length === 0) {
                 searchResults.innerHTML = '<div class="sr-empty">Aucun lieu ne correspond.</div>';
             } else {
@@ -2364,16 +2321,6 @@
             return isMobile ? "Vue d'ensemble" : "Vue d'ensemble · tous les trajets";
         }
 
-        // "06h12" + 45 min → "06h57"
-        function addMinutes(hhmm, mins) {
-            var m = String(hhmm).match(/(\d{1,2})[h:](\d{2})/);
-            if (!m) return hhmm;
-            var total = parseInt(m[1]) * 60 + parseInt(m[2]) + mins;
-            total = ((total % 1440) + 1440) % 1440;
-            var hh = Math.floor(total / 60), mm = total % 60;
-            return (hh < 10 ? '0' : '') + hh + 'h' + (mm < 10 ? '0' : '') + mm;
-        }
-
         function exitOverview() {
             overviewMode = false;
             overviewBtn.classList.remove('active');
@@ -2457,7 +2404,6 @@
                 var routes = await fetchDayRoutes(i, d.points);
                 var w = await fetchDayWeather(d.center[0], d.center[1], d.date);
                 var s = await fetchSunTimes(d.center[0], d.center[1], d.date);
-                var planB = findPlanB(i);
                 var stay = (d.points || []).filter(function(p) { return p.icon === houseIcon; }).slice(-1)[0];
 
                 var totalKm = 0, totalSec = 0;
@@ -2492,7 +2438,6 @@
                 });
 
                 html += '</ul>';
-                if (planB) html += '<div class="print-planb">Plan B pluie : ' + planB.name + ' (abrité, à ' + planB.km.toFixed(0) + ' km)</div>';
                 html += '</div>';
             }
 
