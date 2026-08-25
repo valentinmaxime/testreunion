@@ -565,7 +565,7 @@
         // paramètre lang=fr qui force l'affichage en français sur toutes les tuiles — même
         // solution retenue sur la carte Blois, plus fiable qu'un service communautaire.
         var GEOAPIFY_API_KEY = 'fde2296c330d47ae9ab354513e51feb9';
-        var streetLayer = L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?lang=fr&apiKey=${GEOAPIFY_API_KEY}`, {
+        var streetLayer = L.tileLayer(`https://maps.geoapify.com/v1/tile/klokantech-basic/{z}/{x}/{y}.png?lang=fr&apiKey=${GEOAPIFY_API_KEY}`, {
             attribution: 'Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | &copy; OpenStreetMap contributors',
             maxZoom: 20
         }).addTo(map);
