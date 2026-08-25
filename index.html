@@ -484,9 +484,6 @@
             #printView .print-day:last-child { page-break-after: auto; }
             #printView .print-head { display: flex; gap: 12pt; align-items: flex-start; }
             #printView .print-head-main { flex: 1; }
-            #printView .print-qr { width: 92pt; text-align: center; }
-            #printView .print-qr img { width: 92pt; height: 92pt; }
-            #printView .print-qr span { display: block; font-size: 7pt; color: #666; margin-top: 2pt; }
             #printView .print-meta {
                 display: flex; flex-wrap: wrap; gap: 4pt 14pt;
                 margin: 8pt 0 0; padding: 6pt 0; border-top: .75pt solid #bbb; border-bottom: .75pt solid #bbb;
@@ -2450,28 +2447,6 @@
         // sans lieu précis (extras) dans une seule liste triée par heure (port depuis Blois).
         // URL d'itinéraire Google Maps pour la journée (départ, étapes, arrivée) : encodée dans
         // un QR code pour lancer la navigation depuis la feuille papier, sans retaper les lieux.
-        function dayGmapsUrl(d) {
-            var pts = (d.points || []).filter(function(p) {
-                return !p.excludeFromRoute && !p.onFoot && !p.flight;
-            });
-            if (pts.length < 2) {
-                var only = pts[0] || (d.points || [])[0];
-                if (!only) return null;
-                return 'https://www.google.com/maps/search/?api=1&query=' + only.lat + ',' + only.lng;
-            }
-            var origin = pts[0], dest = pts[pts.length - 1];
-            var waypoints = pts.slice(1, -1).slice(0, 8).map(function(p) { return p.lat + ',' + p.lng; }).join('|');
-            var url = 'https://www.google.com/maps/dir/?api=1&travelmode=driving' +
-                '&origin=' + origin.lat + ',' + origin.lng +
-                '&destination=' + dest.lat + ',' + dest.lng;
-            if (waypoints) url += '&waypoints=' + encodeURIComponent(waypoints);
-            return url;
-        }
-
-        function qrUrl(target) {
-            return 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=' + encodeURIComponent(target);
-        }
-
         async function renderPrintView() {
             var html = '<h1>Réunion &amp; Maurice — feuille de route</h1>';
 
@@ -2495,17 +2470,12 @@
                 if (s) meta += '<span><i>Soleil</i> <b>' + s.sunrise + ' → ' + s.sunset + '</b></span>';
                 if (stay) meta += '<span><i>Nuit</i> <b>' + stay.name + '</b></span>';
 
-                var gmaps = dayGmapsUrl(d);
-                var qrBlock = gmaps
-                    ? '<div class="print-qr"><img src="' + qrUrl(gmaps) + '" alt="Itinéraire Google Maps"><span>Itinéraire du jour</span></div>'
-                    : '';
-
                 html += '<div class="print-day">' +
                     '<div class="print-head"><div class="print-head-main">' +
                     '<div class="print-day-theme">' + d.theme + '</div>' +
                     '<div class="print-day-title">' + d.day + ' — ' + d.title + '</div>' +
                     '<div class="print-meta">' + meta + '</div>' +
-                    '</div>' + qrBlock + '</div><ul>';
+                    '</div></div><ul>';
 
                 var items = d.points.map(function(p) {
                     return { time: p.time, name: p.name, onFoot: p.onFoot };
@@ -2526,19 +2496,6 @@
 
             var view = document.getElementById('printView');
             view.innerHTML = html;
-
-            // Les QR codes doivent être chargés avant l'ouverture de la boîte d'impression,
-            // sinon les pages sortent avec des cadres vides.
-            var imgs = Array.prototype.slice.call(view.querySelectorAll('img'));
-            await Promise.race([
-                Promise.all(imgs.map(function(img) {
-                    return img.complete ? Promise.resolve() : new Promise(function(res) {
-                        img.addEventListener('load', res, { once: true });
-                        img.addEventListener('error', res, { once: true });
-                    });
-                })),
-                new Promise(function(res) { setTimeout(res, 4000); })
-            ]);
         }
 
         document.getElementById('printBtn').addEventListener('click', async function() {
