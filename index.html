@@ -468,6 +468,7 @@
         /* ---------- Impression ---------- */
         #printView { display: none; }
         @media print {
+            @page { margin: 14mm 12mm; }
             body * { visibility: hidden; }
             #printView, #printView * { visibility: visible; }
             #printView {
@@ -479,9 +480,10 @@
                 margin: 0 0 4pt; padding-bottom: 8pt; border-bottom: 1.5pt solid #111;
             }
             #printView .print-day {
-                margin: 0; padding-top: 10pt; page-break-inside: avoid; page-break-after: always;
+                margin: 0; padding: 12pt 0; page-break-inside: avoid;
+                border-bottom: .75pt solid #ddd;
             }
-            #printView .print-day:last-child { page-break-after: auto; }
+            #printView .print-day:last-child { border-bottom: none; }
             #printView .print-head { display: flex; gap: 12pt; align-items: flex-start; }
             #printView .print-head-main { flex: 1; }
             #printView .print-meta {
