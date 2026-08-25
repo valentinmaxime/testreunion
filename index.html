@@ -910,6 +910,20 @@
             visorando: "https://www.visorando.com/en/walk-piton-de-la-fournaise.html",
             randopitons: "https://randopitons.re/randonnee/1254-piton-fournaise-depuis-pas-bellecombe-circuit-2018"
         };
+        var RANDO_VOILE_MARIEE = {
+            visorando: "https://www.visorando.com/en/walk-le-voile-de-la-mariee-au-depart-de-salaz/",
+            randopitons: "https://randopitons.re/randonnee/1181-voiles-mariee-cascade-demoiselles-riviere-mat"
+        };
+        var RANDO_PITON_CABRI = {
+            visorando: "https://www.visorando.com/en/walk-fenetre-des-makes-piton-cabri/",
+            randopitons: "https://randopitons.re/randonnee/1779-piton-cabris-raccourcis-rf-11-makes"
+        };
+        var RANDO_NEZ_DE_BOEUF = {
+            visorando: "https://www.visorando.com/randonnee-le-nez-de-boeuf/"
+        };
+        var RANDO_FORMICA_LEO = {
+            randopitons: "https://randopitons.re/tourisme/128-formica-leo-depuis-pas-bellecombe"
+        };
 
         // Structure du Voyage
         var timelineData = [
@@ -926,7 +940,7 @@
                     { name: "Cascade Bassin Bœuf", lat: -20.949167, lng: 55.583611, icon: redIcon },
                     { name: "Temple du Colosse (St-André)", lat: -20.9367287, lng: 55.6716746, icon: redIcon },
                     { name: "Resto La Cascade Blanche", lat: -20.9993595, lng: 55.5794508, icon: restaurantIcon },
-                    { name: "Cascade Voile de la Mariée (Rando 1h30 AR)", lat: -21.0398724, lng: 55.5380261, icon: hikingIcon, onFoot: true, optional: true },
+                    { name: "Cascade Voile de la Mariée (Rando 1h30 AR)", lat: -21.0398724, lng: 55.5380261, icon: hikingIcon, randoLink: RANDO_VOILE_MARIEE, onFoot: true, optional: true },
                     { name: "Gîte Le Guétali (Grand Îlet)", lat: GITE_GUETALI.lat, lng: GITE_GUETALI.lng, icon: houseIcon }
                 ]
             },
@@ -977,12 +991,12 @@
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
                     { name: "Bourg-Murat / Plaine des Cafres", lat: -21.2012119, lng: 55.5780219, icon: violetIcon },
-                    { name: "Belvédère du Nez de Bœuf", lat: -21.209007, lng: 55.6157861, icon: hikingIcon, optional: true, note: "Rando courte mais pas si facile : 1,33 km / ~40 min AR. À voir sur place selon forme/temps." },
+                    { name: "Belvédère du Nez de Bœuf", lat: -21.209007, lng: 55.6157861, icon: hikingIcon, randoLink: RANDO_NEZ_DE_BOEUF, optional: true, note: "Rando courte mais pas si facile : 1,33 km / ~40 min AR. À voir sur place selon forme/temps." },
                     { name: "Cratère Commerson", lat: -21.2079888, lng: 55.6417072, icon: violetIcon },
                     { name: "Point de vue de la Plaine des Sables", lat: -21.2315663, lng: 55.6486864, icon: violetIcon },
                     { name: "Gîte du Volcan (Déjeuner)", lat: -21.2171853, lng: 55.6871847, icon: restaurantIcon },
                     { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.2222188, lng: 55.6894317, icon: hikingIcon, randoLink: RANDO_FOURNAISE },
-                    { name: "Formica Leo (Enclos Fouqué)", lat: -21.223859, lng: 55.692042, icon: hikingIcon, onFoot: true, optional: true, note: "Le Word mentionne une option de rando plus longue depuis Pas de Bellecombe (jusqu'à 3h) selon forme/météo." },
+                    { name: "Formica Leo (Enclos Fouqué)", lat: -21.223859, lng: 55.692042, icon: hikingIcon, randoLink: RANDO_FORMICA_LEO, onFoot: true, optional: true, note: "Le Word mentionne une option de rando plus longue depuis Pas de Bellecombe (jusqu'à 3h) selon forme/météo." },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
@@ -998,7 +1012,7 @@
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
                     { name: "Les Makes (Belvédère de la Fenêtre)", lat: -21.1853877, lng: 55.4330234, icon: greenIcon },
                     { name: "Observatoire Astronomique des Makes", lat: -21.1997421, lng: 55.4090289, icon: greenIcon },
-                    { name: "Piton Cabri (Rando 4h)", lat: -21.189784, lng: 55.437011, icon: hikingIcon, onFoot: true },
+                    { name: "Piton Cabri (Rando 4h)", lat: -21.189784, lng: 55.437011, icon: hikingIcon, randoLink: RANDO_PITON_CABRI, onFoot: true },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
                 ]
             },
