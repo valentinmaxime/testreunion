@@ -6,552 +6,778 @@
     <meta name="referrer" content="no-referrer-when-downgrade">
     <title>Carte du Voyage - La Réunion & Île Maurice</title>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+
     <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         :root {
-            --accent: #0f6e77;
-            --accent-dark: #0b4f56;
-            --neutral-50: #f7f9f9;
-            --neutral-100: #eef2f2;
-            --neutral-200: #dde5e5;
-            --neutral-600: #5b6b6c;
-            --text-dark: #1f2d2f;
+            --ink: #12312f;
+            --ink-2: #3d5b58;
+            --muted: #82958f;
+            --paper: #fffdf8;
+            --sand: #f6f1e7;
+            --sand-2: #eee6d8;
+            --line: #e3dacb;
+            --accent: #0e6b6f;
+            --accent-dark: #0a4d50;
+            --coral: #c8553d;
+            --font-display: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+            --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
         }
         * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; overflow: hidden; }
+        body {
+            font-family: var(--font-sans);
+            margin: 0; padding: 0;
+            background: #dfe9ea;
+            color: var(--ink);
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            text-wrap: pretty;
+        }
         #map { height: 100vh; height: 100dvh; width: 100vw; }
+        a { color: var(--accent); text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+        a:hover { color: var(--accent-dark); }
+        ::selection { background: color-mix(in srgb, var(--accent) 20%, white); }
 
+        .sb-scroll, .timeline-list { scrollbar-width: thin; scrollbar-color: var(--sand-2) transparent; }
+        .sb-scroll::-webkit-scrollbar, .timeline-list::-webkit-scrollbar { width: 8px; }
+        .sb-scroll::-webkit-scrollbar-thumb, .timeline-list::-webkit-scrollbar-thumb { background: var(--sand-2); border-radius: 99px; }
+        .sb-scroll::-webkit-scrollbar-track, .timeline-list::-webkit-scrollbar-track { background: transparent; }
+
+        /* ---------- Bouton d'ouverture ---------- */
         .burger-btn {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            z-index: 1000;
-            background: white;
-            border: none;
-            border-radius: 8px;
-            width: 44px;
-            height: 44px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            position: absolute; top: 16px; left: 16px; z-index: 1000;
+            display: flex; align-items: center; gap: 9px;
+            height: 46px; padding: 0 17px 0 15px;
+            background: var(--paper); color: var(--ink);
+            border: 1px solid var(--line); border-radius: 99px;
+            font-family: var(--font-sans); font-size: 13px; font-weight: 700;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            transition: background 0.2s, transform 0.2s;
+            box-shadow: 0 10px 26px -10px rgba(11,42,40,.45);
+            transition: transform .18s ease, box-shadow .18s ease;
         }
-        .burger-btn:hover { background: #f0f0f0; transform: scale(1.05); }
+        .burger-btn:hover { transform: translateY(-1px); box-shadow: 0 16px 32px -12px rgba(11,42,40,.5); }
+        body.panel-open .burger-btn { opacity: 0; pointer-events: none; transform: translateX(-8px); }
+        .burger-btn svg { flex-shrink: 0; color: var(--accent); }
+        .burger-btn { transition: transform .18s ease, box-shadow .18s ease, opacity .25s ease; }
 
+        /* ---------- Panneau ---------- */
         .sidebar {
-            position: absolute;
-            top: 0;
-            left: -380px;
-            width: 360px;
-            height: 100vh;
-            height: 100dvh;
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(8px);
+            position: absolute; top: 14px; left: 14px;
+            width: 384px; height: calc(100dvh - 28px);
+            background: rgba(255,253,248,.94);
+            backdrop-filter: blur(18px) saturate(1.4);
+            border: 1px solid rgba(18,49,47,.10);
+            border-radius: 20px;
+            box-shadow: 0 34px 70px -26px rgba(11,42,40,.55), 0 2px 8px -4px rgba(11,42,40,.18);
             z-index: 1001;
-            box-shadow: 4px 0 20px rgba(0,0,0,0.2);
-            transition: left 0.35s ease-in-out;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            overflow-y: auto;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transform: translateX(calc(-100% - 26px));
+            transition: transform .42s cubic-bezier(.22,.75,.2,1);
         }
-        .sidebar.open { left: 0; }
+        .sidebar.open { transform: none; }
 
-        .sidebar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 12px;
-            margin-bottom: 15px;
+        .sb-head {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            gap: 12px; padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(180deg, rgba(246,241,231,.85), rgba(246,241,231,0));
         }
-        .sidebar-header h3 { margin: 0; font-size: 18px; color: #2c3e50; }
+        .sb-eyebrow {
+            font-size: 10px; font-weight: 700; letter-spacing: .16em;
+            text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+        }
+        .sb-head h3 {
+            margin: 0; font-family: var(--font-display); font-weight: 700;
+            font-size: 24px; line-height: 1.1; letter-spacing: -.03em; color: var(--ink);
+        }
         .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #7f8c8d;
+            flex-shrink: 0; width: 32px; height: 32px; margin: -2px -4px 0 0;
+            display: flex; align-items: center; justify-content: center;
+            background: none; border: 1px solid transparent; border-radius: 9px;
+            font-size: 20px; line-height: 1; color: var(--muted); cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+        .close-btn:hover { background: var(--sand-2); color: var(--ink); }
+
+        .sb-scroll { flex: 1; overflow-y: auto; padding: 16px 20px 4px; }
+        .sb-foot { padding: 12px 20px 16px; border-top: 1px solid var(--line); }
+
+        /* ---------- Compte à rebours ---------- */
+        .countdown-badge {
+            display: none;
+            align-items: baseline; gap: 8px;
+            padding: 10px 14px; margin-bottom: 14px;
+            background: color-mix(in srgb, var(--coral) 8%, var(--paper));
+            border: 1px solid color-mix(in srgb, var(--coral) 24%, var(--line));
+            border-radius: 12px;
+        }
+        .countdown-badge.visible { display: flex; }
+        .cd-k {
+            font-size: 10px; font-weight: 800; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--coral);
+        }
+        .cd-v { font-size: 13px; font-weight: 600; color: var(--ink); }
+
+        /* ---------- Statistiques ---------- */
+        .trip-summary {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 1px; margin-bottom: 22px;
+            background: var(--line);
+            border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+        }
+        .trip-summary-item { background: var(--sand); padding: 12px 14px; }
+        .stat-k {
+            font-size: 9.5px; font-weight: 700; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+        }
+        .stat-v { display: flex; align-items: baseline; gap: 5px; min-height: 26px; }
+        .stat-v b {
+            font-family: var(--font-display); font-weight: 600;
+            font-size: 24px; line-height: 1; color: var(--ink); letter-spacing: -.035em;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-v small { font-size: 11px; font-weight: 600; color: var(--ink-2); }
+        .stat-v i { font-size: 11px; color: var(--muted); }
+
+        /* ---------- Titres de section ---------- */
+        .section-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 10px; font-weight: 800; letter-spacing: .16em;
+            text-transform: uppercase; color: var(--muted);
+            margin: 0 0 12px;
+        }
+        .section-title::after {
+            content: ''; flex: 1; height: 1px; background: var(--line);
         }
 
+        /* ---------- Contrôles frise ---------- */
         .timeline-section { margin-bottom: 20px; }
         .timeline-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            display: flex; align-items: stretch; gap: 6px;
+            padding: 5px; margin-bottom: 8px;
+            background: var(--sand); border: 1px solid var(--line); border-radius: 13px;
         }
         .play-btn {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+            background: var(--accent); color: #fff;
+            border: none; border-radius: 9px; padding: 9px 12px;
+            font-family: var(--font-sans); font-size: 12.5px; font-weight: 700;
+            letter-spacing: .01em; cursor: pointer;
+            transition: filter .18s;
         }
-        .play-btn:hover { background: #219150; }
+        .play-btn:hover { filter: brightness(1.12); }
+        .nav-btn {
+            flex-shrink: 0; width: 38px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--paper); color: var(--ink-2);
+            border: 1px solid var(--line); border-radius: 9px;
+            cursor: pointer; transition: background .15s, color .15s;
+        }
+        .nav-btn:hover:not(:disabled) { background: #fff; color: var(--accent); }
+        .nav-btn:disabled { opacity: .32; cursor: default; }
+
+        .overview-btn {
+            width: 100%; margin: 0 0 16px;
+            background: var(--paper); color: var(--ink);
+            border: 1px solid var(--line); border-radius: 11px;
+            padding: 10px 12px;
+            font-family: var(--font-sans); font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: background .15s, border-color .15s, color .15s;
+        }
+        .overview-btn:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); color: var(--accent); }
+        .overview-btn.active {
+            background: color-mix(in srgb, var(--coral) 10%, var(--paper));
+            border-color: color-mix(in srgb, var(--coral) 35%, var(--line));
+            color: var(--coral);
+        }
+
         .timeline-slider {
-            flex: 1;
-            cursor: pointer;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 6px;
-            border-radius: 999px;
-            background: var(--neutral-200);
-            outline: none;
+            width: 100%; margin: 0 0 14px;
+            cursor: pointer; -webkit-appearance: none; appearance: none;
+            height: 6px; border-radius: 999px; background: var(--sand-2); outline: none;
         }
-        .timeline-slider::-webkit-slider-runnable-track {
-            height: 6px;
-            border-radius: 999px;
-            background: var(--neutral-200);
-        }
-        .timeline-slider::-moz-range-track {
-            height: 6px;
-            border-radius: 999px;
-            background: var(--neutral-200);
-        }
+        .timeline-slider::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: var(--sand-2); }
+        .timeline-slider::-moz-range-track { height: 6px; border-radius: 999px; background: var(--sand-2); }
         .timeline-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            margin-top: -6px;
-            border-radius: 50%;
-            background: var(--day-color, var(--accent));
-            border: 3px solid white;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.35);
-            cursor: pointer;
-            transition: background 0.2s;
+            -webkit-appearance: none; appearance: none;
+            width: 18px; height: 18px; margin-top: -6px; border-radius: 50%;
+            background: var(--day-color, var(--accent)); border: 3px solid #fff;
+            box-shadow: 0 2px 6px rgba(11,42,40,.35); cursor: pointer; transition: background .2s;
         }
         .timeline-slider::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: var(--day-color, var(--accent));
-            border: 3px solid white;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.35);
-            cursor: pointer;
-            transition: background 0.2s;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: var(--day-color, var(--accent)); border: 3px solid #fff;
+            box-shadow: 0 2px 6px rgba(11,42,40,.35); cursor: pointer; transition: background .2s;
         }
         .timeline-slider:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent-dark); outline-offset: 2px; }
         .timeline-slider:focus-visible::-moz-range-thumb { outline: 2px solid var(--accent-dark); outline-offset: 2px; }
-        
+
+        /* ---------- Jour sélectionné ---------- */
         .current-day-badge {
-            background: #3498db;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-
-        /* Carte "jour sélectionné" : regroupe météo, soleil et trajet en une seule zone
-           cohérente au lieu de 3 blocs de couleurs différentes qui se disputaient l'attention. */
-        .day-info-card {
-            background: var(--neutral-50);
-            border: 1px solid var(--neutral-200);
-            border-radius: 10px;
+            display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px;
             padding: 12px 14px;
-            margin-bottom: 10px;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--day-color, var(--accent));
+            border-radius: 4px 12px 0 0;
+        }
+        .db-main {
+            font-family: var(--font-display); font-weight: 600; font-size: 18px;
+            line-height: 1.15; letter-spacing: -.02em; color: var(--ink);
+        }
+        .db-main em { font-style: normal; color: var(--muted); font-size: 15px; margin-left: 6px; }
+        .db-theme {
+            margin-left: auto;
+            font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+            color: var(--day-color, var(--accent));
         }
 
-        .weather-sun-row {
-            display: flex;
-            gap: 8px;
+        .day-info-card {
+            background: var(--paper);
+            border: 1px solid var(--line); border-top: 0;
+            border-left: 3px solid var(--day-color, var(--accent));
+            border-radius: 0 0 12px 4px;
+            padding: 0; margin-bottom: 18px;
         }
-        .weather-badge, .sun-badge {
-            flex: 1;
-            background: none;
-            color: var(--text-dark);
-            padding: 0;
-            border-radius: 0;
-            font-size: 12px;
-            font-weight: 600;
-            line-height: 1.55;
+        .weather-sun-row { display: grid; grid-template-columns: 1fr 1fr; }
+        .weather-badge, .sun-badge { padding: 11px 14px; }
+        .sun-badge { border-left: 1px solid var(--line); }
+        .wk {
+            font-size: 9.5px; font-weight: 700; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
         }
-        .sun-badge {
-            border-left: 1px solid var(--neutral-200);
-            padding-left: 10px;
-        }
+        .wv { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); }
+        .wl { display: block; font-size: 10.5px; font-weight: 500; color: var(--muted); margin-top: 2px; }
 
         .route-info-badge {
-            background: none;
-            color: var(--text-dark);
-            padding: 0;
-            border-radius: 0;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 0;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed var(--neutral-200);
-            display: block;
-            line-height: 1.4;
+            display: block; padding: 11px 14px;
+            border-top: 1px solid var(--line);
+            background: var(--sand);
+            border-radius: 0 0 11px 0;
         }
-        .route-info-badge b { color: var(--accent-dark); }
+        .rb-main { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font-size: 12.5px; color: var(--ink-2); }
+        .rb-main b { font-size: 14px; font-weight: 700; color: var(--ink); }
+        .rb-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--muted); }
+        .rb-seg, .rb-load { font-size: 11px; color: var(--muted); }
+        .rb-note { font-size: 11px; color: var(--muted); margin-top: 5px; }
 
+        /* ---------- Liste des jours ---------- */
         .timeline-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            max-height: 220px;
-            overflow-y: auto;
+            list-style: none; padding: 0; margin: 0;
+            max-height: 340px; overflow-y: auto;
         }
         .timeline-item {
-            padding: 10px 12px 10px 14px;
-            position: relative;
-            cursor: pointer;
-            font-size: 13px;
-            line-height: 1.45;
-            transition: background 0.15s;
-            border-radius: 0 8px 8px 0;
-            border-left: 4px solid var(--item-color, var(--neutral-200));
-            color: var(--neutral-600);
-            margin-bottom: 2px;
+            position: relative; cursor: pointer;
+            padding: 11px 12px 11px 26px;
+            border-radius: 10px;
+            transition: background .15s;
         }
-        .timeline-item:hover { background: var(--neutral-100); }
+        .timeline-item + .timeline-item { box-shadow: inset 0 1px 0 var(--line); }
+        .timeline-item::before {
+            content: ''; position: absolute; left: 9px; top: 15px;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #fff; border: 2px solid var(--item-color, var(--sand-2));
+        }
+        .timeline-item::after {
+            content: ''; position: absolute; left: 12.5px; top: 25px; bottom: -1px;
+            width: 1px; background: var(--sand-2);
+        }
+        .timeline-item:last-child::after { display: none; }
+        .timeline-item:hover { background: var(--sand); }
         .timeline-item.active {
-            background: color-mix(in srgb, var(--item-color, var(--accent)) 14%, white);
-            font-weight: 700;
-            color: var(--text-dark);
+            background: color-mix(in srgb, var(--item-color, var(--accent)) 9%, var(--paper));
+            box-shadow: none;
         }
-
-        .section-title { font-weight: bold; font-size: 14px; margin-top: 15px; margin-bottom: 8px; color: #34495e; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
-        .filter-group { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
-        .filter-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        
-        .legend-box { font-size: 12px; line-height: 1.8; margin-top: 10px; }
-        .legend-color { width: 12px; height: 12px; display: inline-block; border-radius: 3px; vertical-align: middle; margin-right: 5px; }
-        .legend-icon { width: 18px; height: 18px; vertical-align: middle; margin-right: 5px; }
-        .legend-dashed {
-            display: inline-block;
-            width: 14px; height: 14px;
-            border: 2px dashed;
-            border-radius: 50%;
-            vertical-align: middle;
-            margin-right: 5px;
+        .timeline-item.active::before { background: var(--item-color, var(--accent)); }
+        .ti-day {
+            display: block; font-size: 11px; font-weight: 800; letter-spacing: .07em;
+            text-transform: uppercase; color: var(--item-color, var(--muted));
         }
+        .timeline-item .ti-title {
+            display: block; margin-top: 2px;
+            font-size: 12.5px; line-height: 1.45; font-weight: 500; color: var(--ink-2);
+        }
+        .timeline-item.active .ti-title { color: var(--ink); font-weight: 600; }
+        .ti-date { display: block; margin-top: 3px; font-size: 10.5px; color: var(--muted); }
 
-        /* Sections repliables (filtres, légende) */
-        .collapsible-section { margin-bottom: 4px; }
+        /* ---------- Sections repliables ---------- */
+        .collapsible-section {
+            margin: 0 0 10px;
+            border: 1px solid var(--line); border-radius: 13px;
+            background: var(--paper); overflow: hidden;
+        }
+        .collapsible-section[open] { background: var(--sand); }
         .collapsible-section summary {
-            cursor: pointer;
-            list-style: none;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            cursor: pointer; list-style: none;
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 13px;
+            transition: background .15s;
         }
         .collapsible-section summary::-webkit-details-marker { display: none; }
-        .collapsible-section summary::after {
-            content: '▸';
-            font-size: 12px;
-            color: #7f8c8d;
-            transition: transform 0.2s;
+        .collapsible-section summary:hover { background: var(--sand-2); }
+        .collapsible-section[open] summary { background: transparent; border-bottom: 1px solid var(--line); }
+        .cs-label {
+            flex: 1; text-align: left;
+            font-size: 12.5px; font-weight: 700; letter-spacing: -.01em; color: var(--ink);
         }
-        .collapsible-section[open] summary::after { transform: rotate(90deg); }
+        .cs-hint {
+            font-size: 11px; font-weight: 600; color: var(--muted);
+        }
+        .cs-chevron {
+            flex-shrink: 0; color: var(--accent);
+            transition: transform .22s cubic-bezier(.22,.75,.2,1);
+        }
+        .collapsible-section[open] .cs-chevron { transform: rotate(180deg); }
+        .collapsible-section[open] .cs-hint { display: none; }
+        .cs-body { padding: 4px 13px 12px; }
 
-        /* Style du bouton Waze dans les popups */
-        .waze-btn {
-            display: inline-block;
-            margin-top: 8px;
-            margin-right: 6px;
-            padding: 5px 10px;
-            background-color: #33ccff;
-            color: #111;
-            font-weight: bold;
-            font-size: 12px;
-            text-decoration: none;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: background 0.2s;
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 2px; font-size: 12.5px; font-weight: 500; color: var(--ink-2);
+            cursor: pointer; border-radius: 8px;
         }
-        .waze-btn:hover {
-            background-color: #25b3e6;
-            color: #000;
-        }
-
-        /* Style du bouton Google Maps dans les popups */
-        .gmaps-btn {
-            display: inline-block;
-            margin-top: 8px;
-            margin-right: 6px;
-            padding: 5px 10px;
-            background-color: #4285F4;
-            color: #fff;
-            font-weight: bold;
-            font-size: 12px;
-            text-decoration: none;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: background 0.2s;
-        }
-        .gmaps-btn:hover {
-            background-color: #3367d6;
-            color: #fff;
+        .filter-item + .filter-item { box-shadow: inset 0 1px 0 var(--line); }
+        .filter-item:hover { color: var(--ink); }
+        .filter-item input[type=checkbox] {
+            width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
         }
 
-        /* Style du bouton Randonnée (Visorando / Randopitons) dans les popups */
-        .rando-btn {
-            display: inline-block;
-            margin-top: 8px;
-            margin-right: 6px;
-            padding: 5px 10px;
-            background-color: #27ae60;
-            color: #fff;
-            font-weight: bold;
-            font-size: 12px;
-            text-decoration: none;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: background 0.2s;
+        .legend-box { font-size: 12px; color: var(--ink-2); }
+        .legend-sub {
+            font-size: 9.5px; font-weight: 700; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--muted);
+            margin: 4px 0 6px;
         }
-        .rando-btn:hover {
-            background-color: #1e8449;
-            color: #fff;
+        .legend-sub + .legend-sub, .legend-dates + .legend-sub { margin-top: 14px; }
+        .legend-dates { display: flex; flex-direction: column; }
+        .legend-row {
+            display: grid; grid-template-columns: 12px 1fr; align-items: start;
+            gap: 0 9px; padding: 7px 0;
         }
+        .legend-row + .legend-row { box-shadow: inset 0 1px 0 var(--line); }
+        .legend-row .legend-color { margin-top: 4px; }
+        .legend-row b {
+            display: block; font-size: 12px; font-weight: 700;
+            font-variant-numeric: tabular-nums; color: var(--ink);
+        }
+        .legend-row span.legend-theme {
+            display: block; margin-top: 1px; font-size: 11.5px; line-height: 1.45; color: var(--ink-2);
+        }
+        .legend-key {
+            display: grid; grid-template-columns: 20px 1fr; align-items: center;
+            gap: 0 8px; padding: 4px 0; line-height: 1.45;
+        }
+        .legend-color { width: 12px; height: 12px; border-radius: 3px; }
+        .legend-icon { width: 18px; height: 18px; }
+        .legend-dashed {
+            width: 14px; height: 14px; border: 2px dashed; border-radius: 50%; margin: 0 auto;
+        }
+        .legend-glyph { text-align: center; font-size: 13px; }
 
-        .leaflet-popup-content a {
-            color: #FFF!important;
-        }
-
-        /* Résumé global du voyage */
-        .trip-summary {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin-bottom: 16px;
-        }
-        .trip-summary-item {
-            background: #2c3e50;
-            color: white;
-            padding: 8px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            text-align: center;
-        }
-        .trip-summary-item b { font-size: 14px; }
-
-        /* Boutons de navigation jour précédent / suivant */
-        .nav-btn {
-            background: var(--neutral-100);
-            color: var(--text-dark);
-            border: none;
-            width: 36px;
-            height: 34px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        }
-        .nav-btn:hover { background: var(--neutral-200); }
-        .nav-btn:disabled { opacity: 0.4; cursor: default; }
-
-        /* Compte à rebours avant le départ */
-        .countdown-badge {
-            background: linear-gradient(135deg, #8e44ad, #3498db);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 12px;
-            display: none;
-        }
-        .countdown-badge.visible { display: block; }
-
-        /* Bouton Vue d'ensemble */
-        .overview-btn {
-            width: 100%;
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 8px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            margin: 8px 0;
-            transition: background 0.2s;
-        }
-        .overview-btn:hover { background: var(--accent-dark); }
-        .overview-btn.active { background: #b45309; }
-
-        /* Bouton Imprimer / PDF */
         .print-btn {
             width: 100%;
-            background: #ecf0f1;
-            color: #2c3e50;
-            border: 1px solid #d5dbdb;
-            padding: 8px 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            margin-top: 12px;
-            transition: background 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: var(--sand); color: var(--ink);
+            border: 1px solid var(--line); border-radius: 11px;
+            padding: 11px 12px;
+            font-family: var(--font-sans); font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: background .15s;
         }
-        .print-btn:hover { background: #d5dbdb; }
+        .print-btn:hover { background: var(--sand-2); }
 
-        /* Vue imprimable : cachée à l'écran, affichée uniquement à l'impression */
+        /* ---------- Habillage Leaflet ---------- */
+        .leaflet-popup-content-wrapper {
+            border-radius: 14px; padding: 3px;
+            background: var(--paper);
+            box-shadow: 0 22px 44px -16px rgba(11,42,40,.5), 0 2px 6px -3px rgba(11,42,40,.2);
+        }
+        .leaflet-popup-content {
+            margin: 13px 15px; font-family: var(--font-sans);
+            font-size: 12.5px; line-height: 1.5; color: var(--ink-2);
+        }
+        .leaflet-popup-tip { background: var(--paper); }
+        .leaflet-container a.leaflet-popup-close-button { color: var(--muted); font-size: 17px; padding: 8px 8px 0 0; }
+        .leaflet-container a.leaflet-popup-close-button:hover { color: var(--ink); }
+        .popup-eyebrow {
+            font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--accent); margin-bottom: 3px;
+        }
+        .popup-title {
+            font-family: var(--font-display); font-weight: 600; font-size: 16px;
+            line-height: 1.2; letter-spacing: -.02em; color: var(--ink); margin-bottom: 2px;
+        }
+        .popup-desc, .popup-list { font-size: 12px; }
+        .popup-list { line-height: 1.65; }
+        .popup-time { color: var(--muted); letter-spacing: .08em; }
+        .popup-list b { color: var(--ink); }
+        .popup-note {
+            margin-top: 7px; padding: 7px 9px;
+            background: var(--sand); border-radius: 8px;
+            font-size: 11px; color: var(--ink-2);
+        }
+        .popup-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+        .waze-btn, .gmaps-btn, .rando-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 6px 11px; border-radius: 99px;
+            font-size: 11px; font-weight: 700; text-decoration: none;
+            transition: filter .15s;
+        }
+        .waze-btn:hover, .gmaps-btn:hover, .rando-btn:hover { filter: brightness(1.1); }
+        .gmaps-btn { background: #1a73e8; }
+        .waze-btn { background: #0b7f9c; }
+        .rando-btn { background: var(--accent); }
+        .leaflet-popup-content .waze-btn,
+        .leaflet-popup-content .gmaps-btn,
+        .leaflet-popup-content .rando-btn { color: #fff !important; }
+        .leaflet-popup-content a:not([class]) { color: var(--accent); font-weight: 700; }
+
+        .leaflet-bar, .leaflet-control-layers {
+            border: 1px solid rgba(18,49,47,.1) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 12px 28px -12px rgba(11,42,40,.45) !important;
+            overflow: hidden;
+        }
+        .leaflet-bar a, .leaflet-bar a:hover {
+            background: var(--paper); color: var(--ink);
+            border-bottom-color: var(--line);
+            width: 34px; line-height: 34px; height: 34px;
+            font-weight: 600;
+        }
+        .leaflet-bar a:hover { background: var(--sand); color: var(--accent); }
+        .leaflet-control-layers-toggle { background-color: var(--paper); }
+        .leaflet-control-layers-expanded {
+            padding: 10px 12px; background: var(--paper);
+            font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+        }
+        .leaflet-control-layers-expanded label { display: flex; align-items: center; gap: 7px; padding: 3px 0; }
+        .leaflet-control-layers-expanded input { accent-color: var(--accent); }
+        .leaflet-control-attribution {
+            font-family: var(--font-sans); font-size: 10px;
+            background: rgba(255,253,248,.85) !important; color: var(--muted);
+            border-radius: 8px 0 0 0; padding: 3px 8px;
+        }
+
+        /* ---------- Impression ---------- */
         #printView { display: none; }
         @media print {
             body * { visibility: hidden; }
             #printView, #printView * { visibility: visible; }
             #printView {
-                display: block;
-                position: absolute;
-                top: 0; left: 0;
-                width: 100%;
-                padding: 20px;
-                font-family: Arial, sans-serif;
-                color: #000;
+                display: block; position: absolute; top: 0; left: 0; width: 100%;
+                padding: 24px; font-family: var(--font-sans); color: #111;
             }
-            #printView h1 { font-size: 20px; border-bottom: 2px solid #333; padding-bottom: 8px; }
-            #printView .print-day { margin-top: 16px; page-break-inside: avoid; }
-            #printView .print-day-title { font-size: 14px; font-weight: bold; color: #2c3e50; }
-            #printView .print-day-theme { font-size: 11px; color: #666; margin-bottom: 4px; }
-            #printView ul { margin: 4px 0; padding-left: 20px; font-size: 12px; }
-            #printView li.on-foot { font-style: italic; color: #555; }
+            #printView h1 {
+                font-family: var(--font-display); font-weight: 700; font-size: 22pt; letter-spacing: -.02em;
+                margin: 0 0 4pt; padding-bottom: 8pt; border-bottom: 1.5pt solid #111;
+            }
+            #printView .print-day {
+                margin: 0; padding-top: 10pt; page-break-inside: avoid; page-break-after: always;
+            }
+            #printView .print-day:last-child { page-break-after: auto; }
+            #printView .print-head { display: flex; gap: 12pt; align-items: flex-start; }
+            #printView .print-head-main { flex: 1; }
+            #printView .print-qr { width: 92pt; text-align: center; }
+            #printView .print-qr img { width: 92pt; height: 92pt; }
+            #printView .print-qr span { display: block; font-size: 7pt; color: #666; margin-top: 2pt; }
+            #printView .print-meta {
+                display: flex; flex-wrap: wrap; gap: 4pt 14pt;
+                margin: 8pt 0 0; padding: 6pt 0; border-top: .75pt solid #bbb; border-bottom: .75pt solid #bbb;
+                font-size: 9.5pt;
+            }
+            #printView .print-meta b { font-weight: 700; }
+            #printView .print-meta span i { font-style: normal; color: #666; }
+            #printView .print-planb { margin-top: 6pt; font-size: 9.5pt; color: #444; }
+            #printView .print-day-title { font-size: 14pt; font-weight: 700; letter-spacing: -.02em; }
+            #printView .print-day-theme {
+                font-size: 8pt; font-weight: 700; letter-spacing: .12em;
+                text-transform: uppercase; color: #666; margin-bottom: 3pt;
+            }
+            #printView ul { margin: 4pt 0; padding-left: 16pt; font-size: 10.5pt; line-height: 1.6; }
+            #printView li.on-foot { font-style: italic; color: #444; }
         }
 
-        /* Adaptation mobile */
-        @media (max-width: 480px) {
+        /* ---------- Recherche de lieu ---------- */
+        .search-wrap { position: relative; margin-bottom: 14px; }
+        .search-field {
+            display: flex; align-items: center; gap: 8px;
+            padding: 0 12px; height: 40px;
+            background: var(--paper); border: 1px solid var(--line); border-radius: 11px;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .search-field:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+        }
+        .search-field svg { flex-shrink: 0; color: var(--muted); }
+        .search-field input {
+            flex: 1; min-width: 0; border: 0; outline: none; background: none;
+            font-family: var(--font-sans); font-size: 12.5px; font-weight: 500; color: var(--ink);
+        }
+        .search-field input::placeholder { color: var(--muted); font-weight: 500; }
+        .search-clear {
+            border: 0; background: none; cursor: pointer; padding: 2px 4px;
+            font-size: 15px; line-height: 1; color: var(--muted); display: none;
+        }
+        .search-field.filled .search-clear { display: block; }
+        .search-results {
+            position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 5;
+            max-height: 268px; overflow-y: auto;
+            background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+            box-shadow: 0 20px 40px -18px rgba(11,42,40,.5);
+            display: none; padding: 5px;
+        }
+        .search-results.open { display: block; }
+        .sr-item {
+            width: 100%; display: block; text-align: left; cursor: pointer;
+            background: none; border: 0; border-radius: 8px; padding: 8px 9px;
+            font-family: var(--font-sans);
+        }
+        .sr-item:hover, .sr-item:focus-visible { background: var(--sand); outline: none; }
+        .sr-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+        .sr-meta { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 600; color: var(--muted); }
+        .sr-empty { padding: 10px; font-size: 12px; color: var(--muted); }
+
+        /* ---------- Fiche jour : nuit / départ / plan B ---------- */
+        .day-extra { border-top: 1px solid var(--line); display: grid; }
+        .dx-item { padding: 10px 14px; }
+        .dx-item + .dx-item { border-top: 1px solid var(--line); }
+        .dx-k {
+            font-size: 9.5px; font-weight: 700; letter-spacing: .14em;
+            text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+        }
+        .dx-v { font-size: 12.5px; font-weight: 600; color: var(--ink); line-height: 1.4; }
+        .dx-v small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 1px; }
+        .rb-alert {
+            display: flex; gap: 6px; margin-top: 7px; padding: 7px 9px;
+            background: color-mix(in srgb, var(--coral) 10%, var(--paper));
+            border: 1px solid color-mix(in srgb, var(--coral) 26%, var(--line));
+            border-radius: 8px; font-size: 11px; font-weight: 600; color: var(--coral);
+        }
+
+        /* ---------- À réserver ---------- */
+        .booking-list { display: flex; flex-direction: column; }
+        .booking-item {
+            display: grid; grid-template-columns: auto 1fr; gap: 2px 9px;
+            width: 100%; text-align: left; cursor: pointer;
+            background: none; border: 0; border-radius: 8px; padding: 9px 6px;
+            font-family: var(--font-sans);
+        }
+        .booking-item + .booking-item { box-shadow: inset 0 1px 0 var(--line); }
+        .booking-item:hover { background: var(--sand-2); }
+        .bk-day {
+            grid-row: span 2; align-self: start; margin-top: 1px;
+            font-size: 10px; font-weight: 800; letter-spacing: .06em;
+            color: #fff; background: var(--accent);
+            padding: 3px 7px; border-radius: 99px;
+        }
+        .bk-name { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+        .bk-note { font-size: 11px; line-height: 1.45; color: var(--muted); }
+
+        /* ---------- Numéros d'étape ---------- */
+        .step-number {
+            display: flex; align-items: center; justify-content: center;
+            min-width: 19px; height: 19px; padding: 0 5px;
+            background: var(--num-bg, var(--accent)); color: #fff;
+            border: 2px solid #fff; border-radius: 99px;
+            font-family: var(--font-display); font-size: 10.5px; font-weight: 700;
+            letter-spacing: -.01em; box-shadow: 0 2px 5px rgba(11,42,40,.4);
+        }
+
+        /* ---------- Mini-carte de situation ---------- */
+        .mini-map-ctl {
+            width: 136px; height: 112px; overflow: hidden;
+            border: 1px solid rgba(18,49,47,.12); border-radius: 12px;
+            box-shadow: 0 12px 28px -14px rgba(11,42,40,.5);
+            background: var(--paper);
+        }
+        .mini-map-ctl .leaflet-container { width: 100%; height: 100%; background: #dfe9ea; }
+        .leaflet-control-scale-line {
+            font-family: var(--font-sans); font-size: 10px; font-weight: 700; color: var(--ink-2);
+            background: rgba(255,253,248,.85); border-color: var(--ink-2); border-radius: 0 0 4px 4px;
+            padding: 1px 6px;
+        }
+        @media (max-width: 520px) { .mini-map-ctl { display: none; } }
+
+        /* ---------- Mobile ---------- */
+        @media (max-width: 520px) {
             .sidebar {
-                width: 100vw;
-                left: -100vw;
-                padding: 15px;
+                top: 8px; left: 8px;
+                width: calc(100vw - 16px); height: calc(100dvh - 16px);
+                border-radius: 16px;
             }
-            .trip-summary { grid-template-columns: 1fr 1fr; gap: 4px; }
-            .weather-sun-row { flex-direction: column; gap: 6px; }
-            .sidebar-header h3 { font-size: 16px; }
-            .timeline-list { max-height: 150px; }
-            .burger-btn { top: 10px; left: 10px; width: 40px; height: 40px; }
+            .sb-head { padding: 16px 16px 14px; }
+            .sb-head h3 { font-size: 21px; }
+            .sb-scroll { padding: 14px 16px 4px; }
+            .sb-foot { padding: 10px 16px 14px; }
+            .weather-sun-row { grid-template-columns: 1fr; }
+            .sun-badge { border-left: 0; border-top: 1px solid var(--line); }
+            .timeline-list { max-height: 260px; }
+            .burger-btn { top: 10px; left: 10px; }
         }
     </style>
 </head>
 <body>
 
-    <button class="burger-btn" id="burgerBtn" title="Ouvrir le menu">☰</button>
+    <button class="burger-btn" id="burgerBtn" title="Ouvrir le menu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="15" y2="12"></line><line x1="3" y1="18" x2="19" y2="18"></line></svg>
+        <span>Itinéraire</span>
+    </button>
 
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3>🧭 Voyage Réunion & Maurice</h3>
-            <button class="close-btn" id="closeBtn">&times;</button>
+        <div class="sb-head">
+            <div>
+                <div class="sb-eyebrow">Carnet de route · 2026</div>
+                <h3>Réunion &amp; Maurice</h3>
+            </div>
+            <button class="close-btn" id="closeBtn" title="Fermer">&times;</button>
         </div>
 
-        <div class="countdown-badge" id="countdownBadge"></div>
+        <div class="sb-scroll">
+            <div class="countdown-badge" id="countdownBadge"></div>
 
-        <div class="trip-summary" id="tripSummary">
-            <div class="trip-summary-item" id="summaryDays">📅 <i>calcul...</i></div>
-            <div class="trip-summary-item" id="summaryHikes">🥾 <i>calcul...</i></div>
-            <div class="trip-summary-item" id="summaryKm">🚗 <i>calcul...</i></div>
-            <div class="trip-summary-item" id="summaryTime">⏱️ <i>calcul...</i></div>
+            <div class="search-wrap">
+                <div class="search-field" id="searchField">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+                    <input type="text" id="placeSearch" placeholder="Rechercher un lieu, un gîte, une rando…" autocomplete="off">
+                    <button class="search-clear" id="searchClear" title="Effacer">&times;</button>
+                </div>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+
+            <div class="trip-summary" id="tripSummary">
+                <div class="trip-summary-item">
+                    <div class="stat-k">Durée</div>
+                    <div class="stat-v" id="summaryDays"><i>calcul…</i></div>
+                </div>
+                <div class="trip-summary-item">
+                    <div class="stat-k">Randonnées</div>
+                    <div class="stat-v" id="summaryHikes"><i>calcul…</i></div>
+                </div>
+                <div class="trip-summary-item">
+                    <div class="stat-k">Distance</div>
+                    <div class="stat-v" id="summaryKm"><i>calcul…</i></div>
+                </div>
+                <div class="trip-summary-item">
+                    <div class="stat-k">Temps de route</div>
+                    <div class="stat-v" id="summaryTime"><i>calcul…</i></div>
+                </div>
+            </div>
+
+            <div class="timeline-section">
+                <div class="section-title">Frise chronologique</div>
+                <div class="timeline-controls">
+                    <button class="nav-btn" id="prevBtn" title="Jour précédent">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <button class="play-btn" id="playBtn">▶ Jouer</button>
+                    <button class="nav-btn" id="nextBtn" title="Jour suivant">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                </div>
+                <button class="overview-btn" id="overviewBtn">Vue d'ensemble</button>
+                <input type="range" class="timeline-slider" id="timeSlider" min="0" max="0" value="0" step="1">
+
+                <div class="current-day-badge" id="dayBadge"></div>
+
+                <div class="day-info-card">
+                    <div class="weather-sun-row">
+                        <div class="weather-badge">
+                            <div class="wk">Météo</div>
+                            <div id="weatherBadge"><span class="wl">chargement…</span></div>
+                        </div>
+                        <div class="sun-badge">
+                            <div class="wk">Soleil</div>
+                            <div id="sunBadge"><span class="wl">chargement…</span></div>
+                        </div>
+                    </div>
+                    <div class="route-info-badge" id="routeBadge"><span class="rb-load">Calcul du trajet…</span></div>
+                    <div class="day-extra" id="dayExtra"></div>
+                </div>
+
+                <ul class="timeline-list" id="timelineList"></ul>
+            </div>
+
+            <details class="collapsible-section" id="bookingSection">
+                <summary>
+                    <span class="cs-label">À réserver avant le départ</span>
+                    <span class="cs-hint" id="bookingHint"></span>
+                    <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </summary>
+                <div class="cs-body">
+                    <div class="booking-list" id="bookingList"></div>
+                </div>
+            </details>
+
+            <details class="collapsible-section">
+                <summary>
+                    <span class="cs-label">Afficher sur la carte</span>
+                    <span class="cs-hint" id="filterHint">6 calques</span>
+                    <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </summary>
+                <div class="cs-body">
+                    <div class="filter-group">
+                        <label class="filter-item"><input type="checkbox" id="toggleSteps" checked> Étapes de l'itinéraire</label>
+                        <label class="filter-item"><input type="checkbox" id="toggleRoutes" checked> Trajet routier du jour</label>
+                        <label class="filter-item" data-need="acc"><input type="checkbox" id="toggleAcc" checked> Gîtes &amp; hébergements</label>
+                        <label class="filter-item" data-need="resto"><input type="checkbox" id="toggleResto" checked> Restaurants &amp; haltes gourmandes</label>
+                        <label class="filter-item" data-need="sausage"><input type="checkbox" id="toggleSausage" checked> Saucisse &amp; gastronomie traditionnelle</label>
+                        <label class="filter-item" data-need="tbd"><input type="checkbox" id="toggleTbd" checked> Activités à définir</label>
+                    </div>
+                </div>
+            </details>
+
+            <details class="collapsible-section">
+                <summary>
+                    <span class="cs-label">Légende des couleurs &amp; symboles</span>
+                    <span class="cs-hint">Voir</span>
+                    <svg class="cs-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </summary>
+                <div class="cs-body legend-box">
+                    <div class="legend-sub">Étapes du séjour</div>
+                    <div class="legend-dates" id="legendDates"></div>
+                    <div class="legend-sub">Symboles</div>
+                    <div class="legend-key" data-need="acc"><img src="https://img.icons8.com/color/48/000000/home--v1.png" class="legend-icon"> <span>Gîtes / hébergements</span></div>
+                    <div class="legend-key" data-need="resto"><img src="https://img.icons8.com/color/48/000000/restaurant.png" class="legend-icon"> <span>Restaurants</span></div>
+                    <div class="legend-key" data-need="sausage">
+                        <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18">
+                            <circle cx="32" cy="32" r="30" fill="#fdebd0" stroke="#a0522d" stroke-width="2.5"/>
+                            <g transform="rotate(-25 32 32)">
+                                <rect x="12" y="24" width="40" height="16" rx="8" fill="#a0522d" stroke="#6b3410" stroke-width="2"/>
+                                <ellipse cx="14" cy="32" rx="3" ry="7" fill="#6b3410"/>
+                                <ellipse cx="50" cy="32" rx="3" ry="7" fill="#6b3410"/>
+                                <line x1="22" y1="25" x2="22" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
+                                <line x1="32" y1="25" x2="32" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
+                                <line x1="42" y1="25" x2="42" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
+                            </g>
+                        </svg>
+                        <span>Rougail saucisse &amp; gastronomie traditionnelle</span>
+                    </div>
+                    <div class="legend-key" data-need="rando">
+                        <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18">
+                            <circle cx="32" cy="32" r="30" fill="#16a085"/>
+                            <path d="M10,44 L24,20 L31,32 L38,22 L54,44 Z" fill="#ffffff"/>
+                        </svg>
+                        <span>Points de randonnée (Visorando / Randopitons)</span>
+                    </div>
+                    <div class="legend-key" data-need="foot"><span class="legend-dashed" style="border-color:#16a085;"></span> <span>Accessible uniquement à pied</span></div>
+                    <div class="legend-key" data-need="flight"><span class="legend-dashed" style="border-color:#3498db;"></span> <span>Accessible en avion</span></div>
+                    <div class="legend-key" data-need="optional"><span class="legend-dashed" style="border-color:#e67e22;"></span> <span>Visite optionnelle (selon temps/envie)</span></div>
+                    <div class="legend-key" data-need="tbd"><span class="legend-glyph">❓</span> <span>Activité à définir (lieu approximatif : voir la popup)</span></div>
+                </div>
+            </details>
         </div>
 
-        <div class="timeline-section">
-            <div class="section-title">⏱️ Frise Chronologique & Routes</div>
-            <div class="timeline-controls">
-                <button class="nav-btn" id="prevBtn" title="Jour précédent">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                </button>
-                <button class="play-btn" id="playBtn">▶ Jouer</button>
-                <button class="nav-btn" id="nextBtn" title="Jour suivant">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
-            </div>
-            <button class="overview-btn" id="overviewBtn">🗺️ Vue d'ensemble</button>
-            <input type="range" class="timeline-slider" id="timeSlider" min="0" max="0" value="0" step="1">
-            <div class="current-day-badge" id="dayBadge">J1 - Lundi 28/09</div>
-
-            <div class="day-info-card">
-                <div class="weather-sun-row">
-                    <div class="weather-badge" id="weatherBadge">⏳ Météo...</div>
-                    <div class="sun-badge" id="sunBadge">⏳ Soleil...</div>
-                </div>
-
-                <div class="route-info-badge" id="routeBadge">Calcul du trajet en cours...</div>
-            </div>
-
-            <ul class="timeline-list" id="timelineList"></ul>
+        <div class="sb-foot">
+            <button class="print-btn" id="printBtn">Imprimer / exporter en PDF</button>
         </div>
-
-        <details class="collapsible-section">
-            <summary class="section-title">🔍 Affichage sur la carte</summary>
-            <div class="filter-group">
-                <label class="filter-item"><input type="checkbox" id="toggleSteps" checked> 📍 Étapes de l'itinéraire</label>
-                <label class="filter-item"><input type="checkbox" id="toggleRoutes" checked> 🛣️ Trajet routier du jour</label>
-                <label class="filter-item"><input type="checkbox" id="toggleAcc" checked> 🏠 Gîtes & Hébergements</label>
-                <label class="filter-item"><input type="checkbox" id="toggleResto" checked> 🍽️ Restaurants & Halte gourmande</label>
-                <label class="filter-item">
-                    <input type="checkbox" id="toggleSausage" checked>
-                    <svg width="16" height="16" viewBox="0 0 64 64" style="vertical-align: middle; margin-right: 2px;">
-                        <circle cx="32" cy="32" r="30" fill="#fdebd0" stroke="#a0522d" stroke-width="2.5"/>
-                        <g transform="rotate(-25 32 32)">
-                            <rect x="12" y="24" width="40" height="16" rx="8" fill="#a0522d" stroke="#6b3410" stroke-width="2"/>
-                            <ellipse cx="14" cy="32" rx="3" ry="7" fill="#6b3410"/>
-                            <ellipse cx="50" cy="32" rx="3" ry="7" fill="#6b3410"/>
-                        </g>
-                    </svg>
-                    Saucisse & Gastronomie traditionnelle
-                </label>
-                <label class="filter-item"><input type="checkbox" id="toggleTbd" checked> ❓ Activités à définir</label>
-            </div>
-        </details>
-
-        <button class="print-btn" id="printBtn">🖨️ Imprimer / Exporter en PDF</button>
-
-        <details class="collapsible-section">
-            <summary class="section-title">🗓️ Légende des étapes & icônes</summary>
-            <div class="legend-box">
-                <div id="legendDates"></div>
-                <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
-                <div><img src="https://img.icons8.com/color/48/000000/home--v1.png" class="legend-icon"> Gîtes / Hébergements</div>
-                <div><img src="https://img.icons8.com/color/48/000000/restaurant.png" class="legend-icon"> Restaurants</div>
-                <div>
-                    <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18" style="vertical-align: middle;">
-                        <circle cx="32" cy="32" r="30" fill="#fdebd0" stroke="#a0522d" stroke-width="2.5"/>
-                        <g transform="rotate(-25 32 32)">
-                            <rect x="12" y="24" width="40" height="16" rx="8" fill="#a0522d" stroke="#6b3410" stroke-width="2"/>
-                            <ellipse cx="14" cy="32" rx="3" ry="7" fill="#6b3410"/>
-                            <ellipse cx="50" cy="32" rx="3" ry="7" fill="#6b3410"/>
-                            <line x1="22" y1="25" x2="22" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
-                            <line x1="32" y1="25" x2="32" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
-                            <line x1="42" y1="25" x2="42" y2="39" stroke="#6b3410" stroke-width="1.3" opacity="0.45"/>
-                        </g>
-                    </svg>
-                    Rougail Saucisse & Gastronomie traditionnelle
-                </div>
-                <div>
-                    <svg class="legend-icon" viewBox="0 0 64 64" width="18" height="18" style="vertical-align: middle;">
-                        <circle cx="32" cy="32" r="30" fill="#16a085"/>
-                        <path d="M10,44 L24,20 L31,32 L38,22 L54,44 Z" fill="#ffffff"/>
-                    </svg>
-                    Points de randonnée (fiche Visorando / Randopitons)
-                </div>
-                <div><span class="legend-dashed" style="border-color:#16a085;"></span> Accessible uniquement à pied</div>
-                <div><span class="legend-dashed" style="border-color:#3498db;"></span> Accessible en avion</div>
-                <div><span class="legend-dashed" style="border-color:#e67e22;"></span> Visite optionnelle (selon temps/envie)</div>
-                <div>❓ Activité à définir (lieu approximatif : voir horaire dans la popup)</div>
-            </div>
-        </details>
     </div>
 
     <div id="map"></div>
@@ -744,16 +970,17 @@
                 day: "J4 - Jeudi 01/10",
                 date: "2026-10-01",
                 theme: "Piton de la Fournaise",
-                title: "Gîte Vincendo ➔ Cratère Commerson ➔ Piton de la Fournaise (Plaine des Sables) ➔ Gîte Vincendo",
+                title: "Gîte Vincendo ➔ Bourg-Murat ➔ Nez de Bœuf ➔ Cratère Commerson ➔ Piton de la Fournaise (Plaine des Sables) ➔ Gîte Vincendo",
                 center: [-21.230, 55.660],
                 zoom: 11,
                 color: "#8e44ad",
                 points: [
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon },
-                    { name: "Cratère Commerson", lat: -21.2079888, lng: 55.6417072, icon: violetIcon },
                     { name: "Bourg-Murat / Plaine des Cafres", lat: -21.2012119, lng: 55.5780219, icon: violetIcon },
-                    { name: "Gîte du Volcan (Déjeuner)", lat: -21.2171853, lng: 55.6871847, icon: restaurantIcon },
+                    { name: "Belvédère du Nez de Bœuf", lat: -21.209007, lng: 55.6157861, icon: violetIcon, optional: true, note: "Rando courte mais pas si facile : 1,33 km / ~40 min AR. À voir sur place selon forme/temps." },
+                    { name: "Cratère Commerson", lat: -21.2079888, lng: 55.6417072, icon: violetIcon },
                     { name: "Point de vue de la Plaine des Sables", lat: -21.2315663, lng: 55.6486864, icon: violetIcon },
+                    { name: "Gîte du Volcan (Déjeuner)", lat: -21.2171853, lng: 55.6871847, icon: restaurantIcon },
                     { name: "Pas de Bellecombe (Vue Volcan)", lat: -21.2222188, lng: 55.6894317, icon: hikingIcon, randoLink: RANDO_FOURNAISE },
                     { name: "Formica Leo (Enclos Fouqué)", lat: -21.223859, lng: 55.692042, icon: violetIcon, onFoot: true, optional: true, note: "Le Word mentionne une option de rando plus longue depuis Pas de Bellecombe (jusqu'à 3h) selon forme/météo." },
                     { name: "Gîte L'Arbre de Vie", lat: GITE_ARBRE_VIE.lat, lng: GITE_ARBRE_VIE.lng, icon: houseIcon }
@@ -941,6 +1168,42 @@
         map.getPane('highlightPane').style.zIndex = 450;
         var highlightLayer = L.layerGroup().addTo(map);
 
+        // Pane des numéros d'étape, au-dessus des icônes
+        map.createPane('numberPane');
+        map.getPane('numberPane').style.zIndex = 660;
+        map.getPane('numberPane').style.pointerEvents = 'none';
+        var numberLayer = L.layerGroup().addTo(map);
+
+        L.control.scale({ position: 'bottomleft', imperial: false, maxWidth: 120 }).addTo(map);
+
+        // Mini-carte de situation : Réunion et Maurice ensemble, avec un point sur la zone
+        // du jour affiché — l'une des deux îles est toujours hors écran sur la grande carte.
+        var miniMap = null, miniDot = null;
+        var miniControl = L.control({ position: 'bottomright' });
+        miniControl.onAdd = function() {
+            var div = L.DomUtil.create('div', 'mini-map-ctl');
+            L.DomEvent.disableClickPropagation(div);
+            setTimeout(function() {
+                miniMap = L.map(div, {
+                    zoomControl: false, attributionControl: false,
+                    dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+                    boxZoom: false, keyboard: false, touchZoom: false, tap: false
+                });
+                L.tileLayer('https://maps.geoapify.com/v1/tile/klokantech-basic/{z}/{x}/{y}.png?apiKey=' + GEOAPIFY_API_KEY + '&lang=fr', {
+                    maxZoom: 10
+                }).addTo(miniMap);
+                var pts = [];
+                timelineData.forEach(function(d) { pts.push(d.center); });
+                miniMap.fitBounds(L.latLngBounds(pts), { padding: [8, 8] });
+                miniDot = L.circleMarker(timelineData[0].center, {
+                    radius: 5, weight: 2, color: '#0e6b6f', fillColor: '#0e6b6f', fillOpacity: 0.9
+                }).addTo(miniMap);
+                miniMap.invalidateSize();
+            }, 0);
+            return div;
+        };
+        miniControl.addTo(map);
+
         // Pane dédié pour les indicateurs permanents "à pied" / "en avion" (toujours visibles,
         // contrairement au halo du jour actif qui est redessiné à chaque changement de jour)
         map.createPane('indicatorPane');
@@ -982,7 +1245,7 @@
         }
 
         function getActionButtons(lat, lng, randoLink, name) {
-            return `<br>${getGoogleMapsBtn(lat, lng, name)}${getWazeBtn(lat, lng)}${getRandoBtn(randoLink)}`;
+            return `<div class="popup-actions">${getGoogleMapsBtn(lat, lng, name)}${getWazeBtn(lat, lng)}${getRandoBtn(randoLink)}</div>`;
         }
 
         // 1. Afficher TOUS LES POINTS du séjour dès le départ
@@ -991,14 +1254,38 @@
         // mais si un même lieu sert à des fins différentes selon le jour (ex. un aéroport où l'on
         // arrive un jour et d'où l'on repart un autre jour, avec un nom/horaire différent), la
         // popup détaille chaque jour séparément au lieu d'afficher le nom du premier jour pour tous.
+        // "Hôtel Le Récif (St-Gilles)" et "Hôtel Le Récif" désignent la même étape :
+        // on ignore la précision entre parenthèses et la casse pour les regrouper.
+        function normalizeStayName(name) {
+            return (name || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+        }
+
+        // ["J6","J7","J8","J10"] → "J6–J8, J10"
+        function formatDayRange(days) {
+            var nums = days.map(function(d) { return { d: d, n: parseInt(String(d).replace(/\D/g, ''), 10) }; });
+            if (nums.some(function(x) { return isNaN(x.n); })) return days.join(', ');
+            var out = [], i = 0;
+            while (i < nums.length) {
+                var j = i;
+                while (j + 1 < nums.length && nums[j + 1].n === nums[j].n + 1) j++;
+                out.push(j - i >= 1 ? nums[i].d + '–' + nums[j].d : nums[i].d);
+                i = j + 1;
+            }
+            return out.join(', ');
+        }
+
         var pointOccurrences = {};
         timelineData.forEach(function(d) {
             d.points.forEach(function(pt) {
                 var key = `${pt.lat.toFixed(4)}_${pt.lng.toFixed(4)}`;
                 if (!pointOccurrences[key]) pointOccurrences[key] = [];
                 var shortDay = d.day.split(' - ')[0]; // "J1 - Lundi 28/09" → "J1"
-                if (!pointOccurrences[key].some(o => o.day === shortDay)) {
+                var existing = pointOccurrences[key].find(o => o.day === shortDay);
+                if (!existing) {
                     pointOccurrences[key].push({ day: shortDay, name: pt.name, time: pt.time });
+                } else if ((pt.name || '').length > (existing.name || '').length &&
+                           normalizeStayName(pt.name) === normalizeStayName(existing.name)) {
+                    existing.name = pt.name; // garde la variante la plus descriptive
                 }
             });
         });
@@ -1013,19 +1300,31 @@
                     addedPointsKeys.add(key);
                     var occurrences = pointOccurrences[key];
                     var daysLabel = occurrences.map(o => o.day).join(', ');
-                    var noteHtml = pt.note ? `<br><span style="font-size:11px; color:#555;">📝 ${pt.note}</span>` : '';
-                    var sameNameEveryDay = occurrences.every(o => o.name === occurrences[0].name);
+                    var noteHtml = pt.note ? `<div class="popup-note">${pt.note}</div>` : '';
+                    // Regroupe les jours consécutifs qui partagent le même libellé pour ne pas
+                    // répéter cinq fois "Hôtel Le Récif" dans la popup.
+                    var groups = [];
+                    occurrences.forEach(function(o) {
+                        var last = groups[groups.length - 1];
+                        var label = normalizeStayName(o.name);
+                        if (last && last.label === label && last.time === (o.time || '')) {
+                            last.days.push(o.day);
+                        } else {
+                            groups.push({ label: label, name: o.name, time: o.time || '', days: [o.day] });
+                        }
+                    });
 
                     var popupContent;
-                    if (sameNameEveryDay) {
-                        popupContent = `<b>${daysLabel}</b><br>📍 <b>${pt.name}</b>${noteHtml}${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
+                    if (groups.length === 1) {
+                        var soleTime = groups[0].time ? ` <span class="popup-time">${groups[0].time}</span>` : '';
+                        popupContent = `<div class="popup-eyebrow">${formatDayRange(groups[0].days)}${soleTime}</div><div class="popup-title">${groups[0].name}</div>${noteHtml}${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
                     } else {
-                        // Le lieu sert à des fins différentes selon le jour : détail jour par jour
-                        var breakdown = occurrences.map(function(o) {
-                            var timeLabel = o.time ? ` (${o.time})` : '';
-                            return `<b>${o.day}</b>${timeLabel} : ${o.name}`;
+                        // Le lieu sert à des fins différentes selon le jour : détail par étape
+                        var breakdown = groups.map(function(g) {
+                            var timeLabel = g.time ? ` (${g.time})` : '';
+                            return `<b>${formatDayRange(g.days)}</b>${timeLabel} : ${g.name}`;
                         }).join('<br>');
-                        popupContent = `📍 ${breakdown}${noteHtml}${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
+                        popupContent = `<div class="popup-list">${breakdown}</div>${noteHtml}${getActionButtons(pt.lat, pt.lng, pt.randoLink, pt.name)}`;
                     }
 
                     var marker = L.marker([pt.lat, pt.lng], { icon: pt.icon })
@@ -1042,6 +1341,17 @@
                     }
 
                     markersRegistry[key] = marker;
+                    // Clic sur un marqueur = on bascule aussi la frise sur le jour concerné
+                    // (la popup reste celle du marqueur cliqué, d'où skipPopup).
+                    var firstDayIdx = timelineData.findIndex(function(dd) {
+                        return (dd.points || []).some(function(pp) { return ptKey(pp) === key; });
+                    });
+                    if (firstDayIdx >= 0) {
+                        marker.on('click', function() {
+                            if (parseInt(timeSlider.value) === firstDayIdx || overviewMode) return;
+                            selectDay(firstDayIdx, { skipPopup: true });
+                        });
+                    }
 
                     // Indicateur permanent : anneau pointillé pour les points à pied ou en avion
                     if (pt.onFoot || pt.flight) {
@@ -1093,7 +1403,7 @@
 
         // 2. Afficher les points Gastronomie & Saucisse
         sausagePoints.forEach(function(pt) {
-            var popupContent = `🌭 <b>${pt.name}</b><br><span style="font-size:12px;">${pt.desc}</span>${getActionButtons(pt.lat, pt.lng, null, pt.name)}`;
+            var popupContent = `<div class="popup-eyebrow">Gastronomie</div><div class="popup-title">${pt.name}</div><div class="popup-desc">${pt.desc}</div>${getActionButtons(pt.lat, pt.lng, null, pt.name)}`;
             var marker = L.marker([pt.lat, pt.lng], { icon: sausageIcon })
                 .bindPopup(popupContent);
             marker.addTo(allSausageLayer);
@@ -1168,12 +1478,12 @@
                     if (pt.icon === hikingIcon) count++;
                 });
             });
-            summaryHikesEl.innerHTML = `🥾 <b>${count}</b> points de rando`;
+            summaryHikesEl.innerHTML = `<b>${count}</b><small>points de rando</small>`;
         }
 
         var summaryDaysEl = document.getElementById('summaryDays');
         function computeDayCount() {
-            summaryDaysEl.innerHTML = `📅 <b>${timelineData.length}</b> jours`;
+            summaryDaysEl.innerHTML = `<b>${timelineData.length}</b><small>jours</small>`;
         }
 
         // Génère la légende des dates/couleurs à partir de timelineData (regroupe les jours
@@ -1181,6 +1491,32 @@
         function formatDDMM(isoDate) {
             var parts = isoDate.split('-');
             return `${parts[2]}/${parts[1]}`;
+        }
+
+        // Ne montre dans la légende et les filtres que ce qui existe réellement dans les données.
+        function prunePanelEntries() {
+            var all = [];
+            timelineData.forEach(function(d) { (d.points || []).forEach(function(p) { all.push(p); }); });
+            var present = {
+                acc: all.some(p => p.icon === houseIcon),
+                resto: all.some(p => p.icon === restaurantIcon),
+                sausage: all.some(p => p.icon === sausageIcon) || (typeof sausagePoints !== 'undefined' && sausagePoints.length > 0),
+                rando: all.some(p => p.icon === hikingIcon || p.randoLink),
+                foot: all.some(p => p.onFoot),
+                flight: all.some(p => p.flight),
+                optional: all.some(p => p.optional),
+                tbd: timelineData.some(d => d.extras && d.extras.length > 0)
+            };
+            document.querySelectorAll('[data-need]').forEach(function(el) {
+                var need = el.getAttribute('data-need');
+                if (present[need]) return;
+                el.style.display = 'none';
+                var cb = el.querySelector('input[type=checkbox]');
+                if (cb) { cb.checked = false; cb.dispatchEvent(new Event('change')); }
+            });
+            var visible = document.querySelectorAll('.filter-item:not([style*="none"])').length;
+            var hint = document.getElementById('filterHint');
+            if (hint) hint.textContent = visible + ' calques';
         }
 
         function renderLegendDates() {
@@ -1202,7 +1538,7 @@
                 var dateLabel = g.startDate === g.endDate
                     ? formatDDMM(g.startDate)
                     : `${formatDDMM(g.startDate)} - ${formatDDMM(g.endDate)}`;
-                return `<div><span class="legend-color" style="background: ${g.color};"></span> <b>${dateLabel}</b>: ${g.theme}</div>`;
+                return `<div class="legend-row"><span class="legend-color" style="background: ${g.color};"></span><span><b>${dateLabel}</b><span class="legend-theme">${g.theme}</span></span></div>`;
             }).join('');
         }
 
@@ -1219,11 +1555,11 @@
                 });
             }
 
-            summaryKmEl.innerHTML = `🚗 <b>${Math.round(totalKm)}</b> km`;
+            summaryKmEl.innerHTML = `<b>${Math.round(totalKm)}</b><small>km</small>`;
             var totalMinutes = Math.round(totalSeconds / 60);
             var h = Math.floor(totalMinutes / 60);
             var m = totalMinutes % 60;
-            summaryTimeEl.innerHTML = `⏱️ <b>${h}h${m < 10 ? '0' : ''}${m}</b> route`;
+            summaryTimeEl.innerHTML = `<b>${h}h${m < 10 ? '0' : ''}${m}</b><small>au volant</small>`;
         }
 
         // 4. Gestion API Open-Meteo (météo en direct)
@@ -1383,17 +1719,60 @@
             return null;
         }
 
+        // Décalage à réserver à gauche quand le panneau est ouvert (sinon 0).
+        // On utilise offsetLeft/offsetWidth — la géométrie de mise en page, insensible au
+        // translateX de la transition — car getBoundingClientRect() renvoie la position
+        // ANIMÉE : lu en pleine ouverture il donne un bord droit négatif, et l'auto-pan de
+        // la popup se cale alors sur un panneau large de zéro.
+        function panelOffset() {
+            var sb = document.getElementById('sidebar');
+            if (!sb || !sb.classList.contains('open')) return 0;
+            var right = sb.offsetLeft + sb.offsetWidth;
+            if (right >= window.innerWidth - 20) return 0; // plein écran (mobile) : pas de décalage
+            return Math.max(0, right);
+        }
+
         // Interface & Menu
         var sidebar = document.getElementById('sidebar');
         var burgerBtn = document.getElementById('burgerBtn');
         var closeBtn = document.getElementById('closeBtn');
 
-        burgerBtn.addEventListener('click', function() { sidebar.classList.add('open'); });
-        closeBtn.addEventListener('click', function() { sidebar.classList.remove('open'); });
+        // Résolue quand le panneau a fini de coulisser ET que Leaflet connaît sa nouvelle
+        // taille utile : tout cadrage/popup doit l'attendre, sinon l'auto-pan se calcule sur
+        // une carte périmée et la popup finit derrière le panneau.
+        var panelSettled = Promise.resolve();
+
+        function setPanel(open) {
+            var changed = sidebar.classList.contains('open') !== open;
+            sidebar.classList.toggle('open', open);
+            document.body.classList.toggle('panel-open', open);
+            panelSettled = new Promise(function(resolve) {
+                var done = false;
+                function finish() {
+                    if (done) return;
+                    done = true;
+                    sidebar.removeEventListener('transitionend', onEnd);
+                    map.invalidateSize({ animate: false });
+                    resolve();
+                }
+                function onEnd(e) {
+                    if (e.target === sidebar && e.propertyName === 'transform') finish();
+                }
+                if (!changed) { finish(); return; }
+                sidebar.addEventListener('transitionend', onEnd);
+                setTimeout(finish, 700); // repli si la transition ne se déclenche pas
+            });
+            return panelSettled;
+        }
+        setPanel(window.innerWidth > 900);
+
+        burgerBtn.addEventListener('click', function() { setPanel(true); });
+        closeBtn.addEventListener('click', function() { setPanel(false); });
 
         var timelineList = document.getElementById('timelineList');
         var dayBadge = document.getElementById('dayBadge');
         var routeBadge = document.getElementById('routeBadge');
+        var dayExtra = document.getElementById('dayExtra');
         var weatherBadge = document.getElementById('weatherBadge');
         var sunBadge = document.getElementById('sunBadge');
         var timeSlider = document.getElementById('timeSlider');
@@ -1402,19 +1781,124 @@
             var li = document.createElement('li');
             li.className = 'timeline-item' + (idx === 0 ? ' active' : '');
             li.style.setProperty('--item-color', item.color);
-            li.innerHTML = `<b>${item.day}</b> : ${item.title}`;
-            li.addEventListener('click', function() { selectDay(idx); });
+            var dp = item.day.split(' - ');
+            li.innerHTML = `<span class="ti-day">${dp[0]}</span><span class="ti-title">${item.title}</span><span class="ti-date">${dp[1] || ''}</span>`;
+            li.addEventListener('click', function() {
+                selectDay(idx);
+                if (window.innerWidth <= 520) setPanel(false);
+            });
             timelineList.appendChild(li);
         });
 
         timeSlider.max = timelineData.length - 1;
 
         // Jeton de requête pour éviter que des réponses tardives n'écrasent l'affichage du jour courant
+        // ---------- Outils partagés (distances, index de lieux, réservations, plan B) ----------
+        function ptKey(p) { return p.lat.toFixed(4) + '_' + p.lng.toFixed(4); }
+
+        function haversineKm(a, b) {
+            var R = 6371, dLat = (b[0] - a[0]) * Math.PI / 180, dLng = (b[1] - a[1]) * Math.PI / 180;
+            var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            return 2 * R * Math.asin(Math.sqrt(s));
+        }
+
+        function deaccent(s) {
+            return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        // Lieux couverts (donc visitables sous la pluie) déjà présents dans l'itinéraire :
+        // on ne propose jamais un repli inventé, seulement une étape existante du voyage.
+        var INDOOR_RE = /mus[ée]e|distiller|rhum|saga|aventure du sucre|caf[ée]|march[ée]|jardin|observatoire|ch[âa]teau|temple|usine|aquarium|centre|boutique/i;
+
+        // Un jour "exposé" = au moins une rando ou un point accessible à pied.
+        function dayNeedsPlanB(d) {
+            return (d.points || []).some(p => p.onFoot || p.icon === hikingIcon || p.randoLink);
+        }
+
+        function findPlanB(dayIndex) {
+            var d = timelineData[dayIndex];
+            if (!dayNeedsPlanB(d)) return null;
+            var own = new Set((d.points || []).map(ptKey));
+            var best = null;
+            timelineData.forEach(function(other) {
+                (other.points || []).forEach(function(p) {
+                    if (own.has(ptKey(p)) || !INDOOR_RE.test(p.name)) return;
+                    var km = haversineKm(d.center, [p.lat, p.lng]);
+                    if (km > 45) return; // rester dans la zone du jour
+                    if (!best || km < best.km) best = { name: p.name, km: km };
+                });
+            });
+            return best;
+        }
+
+        // Tout ce qui demande une réservation : détecté sur les notes (« à réserver », « pass »…)
+        // et sur les prestations à créneau (hélicoptère), jamais saisi en double.
+        var BOOKING_RE = /r[ée]serv|pass |billet|cr[ée]neau|sur inscription/i;
+
+        // Les notes contiennent du HTML (liens de réservation) : on en extrait le TEXTE avant
+        // de tronquer, sinon une balise coupée en deux avale le reste de la liste au rendu.
+        function plainExcerpt(src, max) {
+            var tmp = document.createElement('div');
+            tmp.innerHTML = src;
+            var text = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
+            if (text.length <= max) return escapeHtml(text);
+            return escapeHtml(text.slice(0, max).replace(/\s+\S*$/, '')) + '…';
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function collectBookings() {
+            var out = [];
+            timelineData.forEach(function(d, i) {
+                (d.points || []).forEach(function(p) {
+                    var viaNote = p.note && BOOKING_RE.test(p.note);
+                    var viaHeli = /h[ée]licopt|helilagon|corail/i.test(p.name);
+                    if (!viaNote && !viaHeli) return;
+                    out.push({
+                        dayIndex: i,
+                        day: d.day.split(' - ')[0],
+                        name: p.name,
+                        note: p.note ? plainExcerpt(p.note, 130) : 'Prestation à créneau : à réserver à l\'avance.'
+                    });
+                });
+            });
+            return out;
+        }
+
         var selectionToken = 0;
 
-        async function selectDay(index) {
+        // Résout quand la carte n'a plus bougé depuis 220 ms (fin de vol, zoom compris),
+        // avec un plafond pour ne jamais bloquer si un mouvement s'éternise.
+        function whenMapIdle(timeout) {
+            return new Promise(function(resolve) {
+                var timer, cap, done = false;
+                function finish() {
+                    if (done) return;
+                    done = true;
+                    clearTimeout(timer); clearTimeout(cap);
+                    map.off('move zoom movestart zoomstart', bump);
+                    resolve();
+                }
+                function bump() {
+                    clearTimeout(timer);
+                    timer = setTimeout(finish, 220);
+                }
+                map.on('move zoom movestart zoomstart', bump);
+                bump();
+                cap = setTimeout(finish, timeout || 3000);
+            });
+        }
+
+        async function selectDay(index, opts) {
             index = parseInt(index);
+            opts = opts || {};
             var myToken = ++selectionToken;
+            // Lien partageable : l'URL retient toujours le jour affiché (#j8)
+            try { history.replaceState(null, '', '#j' + (index + 1)); } catch (e) {}
+            await panelSettled;
+            if (myToken !== selectionToken) return;
 
             if (typeof overviewMode !== 'undefined' && overviewMode) {
                 exitOverview();
@@ -1423,11 +1907,14 @@
             timeSlider.value = index;
             var data = timelineData[index];
             timeSlider.style.setProperty('--day-color', data.color);
-            dayBadge.innerText = `${data.day}`;
+            dayBadge.style.setProperty('--day-color', data.color);
+            document.querySelector('.day-info-card').style.setProperty('--day-color', data.color);
+            var dparts = data.day.split(' - ');
+            dayBadge.innerHTML = `<span class="db-main">${dparts[0]}<em>${dparts[1] || ''}</em></span><span class="db-theme">${data.theme}</span>`;
             updateNavButtons(index);
-            routeBadge.innerHTML = `<i>Calcul du trajet en cours...</i>`;
-            weatherBadge.innerHTML = `⏳ Météo...`;
-            sunBadge.innerHTML = `⏳ Soleil...`;
+            routeBadge.innerHTML = `<span class="rb-load">Calcul du trajet…</span>`;
+            weatherBadge.innerHTML = `<span class="wl">chargement…</span>`;
+            sunBadge.innerHTML = `<span class="wl">chargement…</span>`;
 
             var items = timelineList.querySelectorAll('.timeline-item');
             items.forEach((el, i) => {
@@ -1437,6 +1924,39 @@
 
             activeRouteLayer.clearLayers();
             highlightLayer.clearLayers();
+            numberLayer.clearLayers();
+
+            // Estompage des marqueurs qui n'appartiennent pas au jour affiché : le contexte
+            // de l'île reste lisible sans noyer l'étape du jour.
+            var activeKeys = new Set((data.points || []).map(ptKey));
+            Object.keys(markersRegistry).forEach(function(k) {
+                var mk = markersRegistry[k];
+                if (mk.setOpacity) mk.setOpacity(activeKeys.has(k) ? 1 : 0.35);
+            });
+
+            // Étapes numérotées dans l'ordre du parcours (un même lieu revu dans la journée
+            // porte ses deux numéros, ex. « 1·5 » pour l'hôtel de départ et d'arrivée).
+            var orderMap = {};
+            (data.points || []).forEach(function(p, i) {
+                var k = ptKey(p);
+                if (!orderMap[k]) orderMap[k] = { pt: p, nums: [] };
+                orderMap[k].nums.push(i + 1);
+            });
+            Object.keys(orderMap).forEach(function(k) {
+                var o = orderMap[k];
+                L.marker([o.pt.lat, o.pt.lng], {
+                    pane: 'numberPane',
+                    interactive: false,
+                    icon: L.divIcon({
+                        className: '',
+                        html: '<span class="step-number" style="--num-bg:' + data.color + '">' + o.nums.join('·') + '</span>',
+                        iconSize: null,
+                        iconAnchor: [-9, 26]
+                    })
+                }).addTo(numberLayer);
+            });
+
+            if (miniDot) miniDot.setLatLng(data.center).setStyle({ color: data.color, fillColor: data.color });
 
             // Halo de mise en avant sur les points du jour sélectionné
             data.points.forEach(function(pt) {
@@ -1457,19 +1977,56 @@
                 var boundsCoords = data.points.map(p => [p.lat, p.lng]);
                 if (data.extras && data.extras.length > 0) boundsCoords.push(data.center);
                 var bounds = L.latLngBounds(boundsCoords);
-                map.flyToBounds(bounds, { padding: [50, 50], maxZoom: data.zoom, duration: 1.0 });
+                map.flyToBounds(bounds, {
+                    paddingTopLeft: L.point(panelOffset() + 50, 170),
+                    paddingBottomRight: L.point(50, 60),
+                    maxZoom: data.zoom, duration: 1.0
+                });
             } else {
                 map.flyTo(data.center, data.zoom, { duration: 1.0 });
             }
+
+            // Fiche jour : nuit sur place, heure de départ conseillée, repli en cas de pluie.
+            var advSunrise = null, advDrivingMin = null;
+            var stay = (data.points || []).filter(p => p.icon === houseIcon).slice(-1)[0];
+            var firstTimed = (data.points || []).find(p => p.time);
+            var planB = findPlanB(index);
+
+            function paintDayExtra() {
+                if (myToken !== selectionToken) return;
+                var rows = '';
+                if (stay) {
+                    rows += '<div class="dx-item"><div class="dx-k">Nuit sur place</div><div class="dx-v">' + stay.name + '</div></div>';
+                }
+                var depart = '', departNote = '';
+                if (firstTimed) {
+                    depart = firstTimed.time;
+                    departNote = 'horaire prévu · ' + firstTimed.name;
+                } else if (advSunrise) {
+                    depart = addMinutes(advSunrise, 45);
+                    departNote = 'suggestion : 45 min après le lever du soleil (' + advSunrise + ')';
+                    if (advDrivingMin !== null && advDrivingMin >= 90) {
+                        departNote += ' · ' + Math.round(advDrivingMin) + ' min de route';
+                    }
+                }
+                if (depart) {
+                    rows += '<div class="dx-item"><div class="dx-k">Départ conseillé</div><div class="dx-v">' + depart + '<small>' + departNote + '</small></div></div>';
+                }
+                if (planB) {
+                    rows += '<div class="dx-item"><div class="dx-k">Plan B pluie</div><div class="dx-v">' + planB.name + '<small>abrité · à ' + planB.km.toFixed(0) + ' km de la zone du jour</small></div></div>';
+                }
+                dayExtra.innerHTML = rows;
+            }
+            paintDayExtra();
 
             // Météo du jour : observée / prévision / normale saisonnière selon la proximité de la date
             fetchDayWeather(data.center[0], data.center[1], data.date).then(function(w) {
                 if (myToken !== selectionToken) return;
                 if (w) {
                     var icon = WEATHER_ICONS[w.weathercode] || "🌡️";
-                    weatherBadge.innerHTML = `${icon} ${w.tempMin.toFixed(0)}-${w.tempMax.toFixed(0)}°C<br><span style="font-weight:normal; font-size:10px;">${w.label}</span>`;
+                    weatherBadge.innerHTML = `<span class="wv">${icon} ${w.tempMin.toFixed(0)}–${w.tempMax.toFixed(0)}°C</span><span class="wl">${w.label}</span>`;
                 } else {
-                    weatherBadge.innerHTML = `⚠️ Météo indisponible`;
+                    weatherBadge.innerHTML = `<span class="wl">météo indisponible</span>`;
                 }
             });
 
@@ -1477,9 +2034,11 @@
             fetchSunTimes(data.center[0], data.center[1], data.date).then(function(s) {
                 if (myToken !== selectionToken) return;
                 if (s) {
-                    sunBadge.innerHTML = `☀️ ${s.sunrise}<br>🌙 ${s.sunset}`;
+                    sunBadge.innerHTML = `<span class="wv">${s.sunrise} → ${s.sunset}</span><span class="wl">lever · coucher</span>`;
+                    advSunrise = s.sunrise;
+                    paintDayExtra();
                 } else {
-                    sunBadge.innerHTML = `⚠️ Soleil indisponible`;
+                    sunBadge.innerHTML = `<span class="wl">horaires indisponibles</span>`;
                 }
             });
 
@@ -1512,23 +2071,49 @@
                 var m = durationMinutes % 60;
                 var timeStr = h > 0 ? `${h}h${m < 10 ? '0' : ''}${m}` : `${m} min`;
 
-                var footNote = footPoints.length > 0 ? `<br>🥾 <i>+ portion(s) accessible(s) uniquement à pied</i>` : '';
-                var flightNote = flightPoints.length > 0 ? `<br>✈️ <i>+ portion(s) en avion</i>` : '';
-                var segmentNote = routeDataArr.length > 1 ? ` (${routeDataArr.length} segments)` : '';
-                routeBadge.innerHTML = `🚗 <b>Trajet du jour :</b> ${km} km${segmentNote}<br>⏱️ <b>Temps de conduite estimé :</b> ~${timeStr}${footNote}${flightNote}`;
+                var footNote = footPoints.length > 0 ? `<div class="rb-note">🥾 portion(s) accessible(s) uniquement à pied</div>` : '';
+                var flightNote = flightPoints.length > 0 ? `<div class="rb-note">✈️ portion(s) en avion</div>` : '';
+                var segmentNote = routeDataArr.length > 1 ? ` <span class="rb-seg">${routeDataArr.length} segments</span>` : '';
+                var longAlert = durationMinutes >= 120
+                    ? `<div class="rb-alert">⚠ Plus de 2 h de route : prévoir des pauses et partir tôt</div>` : '';
+                routeBadge.innerHTML = `<div class="rb-main"><b>${km} km</b><span class="rb-dot"></span><b>~${timeStr}</b> de conduite${segmentNote}</div>${footNote}${flightNote}${longAlert}`;
+                advDrivingMin = durationMinutes;
+                paintDayExtra();
             } else if (footPoints.length > 0 || flightPoints.length > 0) {
                 var footNote2 = footPoints.length > 0 ? `🥾 Accessible uniquement à pied. ` : '';
                 var flightNote2 = flightPoints.length > 0 ? `✈️ Trajet en avion. ` : '';
-                routeBadge.innerHTML = `📍 ${footNote2}${flightNote2}`;
+                routeBadge.innerHTML = `<div class="rb-main">${footNote2}${flightNote2}</div>`;
             } else {
-                routeBadge.innerHTML = `📍 Journée sur place / Détente.`;
+                routeBadge.innerHTML = `<div class="rb-main">Journée sur place · détente</div>`;
             }
 
-            if (data.points.length > 0) {
+            if (data.points.length > 0 && !opts.skipPopup) {
                 var firstPt = data.points[0];
                 var key = `${firstPt.lat.toFixed(4)}_${firstPt.lng.toFixed(4)}`;
-                if (markersRegistry[key]) {
-                    markersRegistry[key].openPopup();
+                var marker = markersRegistry[key];
+                if (marker) {
+                    // Ouverture après la fin du vol de caméra, avec une zone d'auto-pan qui
+                    // exclut le panneau latéral : sinon la popup se cale sur la vue d'avant
+                    // l'animation et finit derrière le panneau ou coupée en haut.
+                    // La popup ne s'ouvre qu'une fois la caméra RÉELLEMENT immobile : ouverte
+                    // pendant le vol, son auto-pan se calcule sur une vue intermédiaire et elle
+                    // reste à moitié derrière le panneau jusqu'au prochain déplacement.
+                    await whenMapIdle();
+                    if (myToken !== selectionToken) return;
+                    var p = marker.getPopup();
+                    if (p) {
+                        // pas de keepInView : la popup doit rester libre quand
+                        // l'utilisateur se déplace lui-même sur la carte
+                        p.options.autoPanPaddingTopLeft = L.point(panelOffset() + 24, 120);
+                        p.options.autoPanPaddingBottomRight = L.point(24, 24);
+                    }
+                    marker.openPopup();
+                    // Filet de sécurité : recalcule l'auto-pan après le rendu, au cas où la
+                    // popup aurait été mesurée avant que son contenu ait sa taille finale.
+                    requestAnimationFrame(function() {
+                        if (myToken !== selectionToken || !p || !p.isOpen()) return;
+                        if (p._adjustPan) p._adjustPan();
+                    });
                 }
             }
         }
@@ -1568,7 +2153,7 @@
         function startAnimation() {
             isPlaying = true;
             playBtn.innerText = "⏸ Pause";
-            playBtn.style.background = "#e74c3c";
+            playBtn.style.background = "var(--coral)";
             
             playTimer = setInterval(function() {
                 var curr = parseInt(timeSlider.value);
@@ -1580,7 +2165,7 @@
         function stopAnimation() {
             isPlaying = false;
             playBtn.innerText = "▶ Jouer";
-            playBtn.style.background = "#27ae60";
+            playBtn.style.background = "var(--accent)";
             if (playTimer) clearInterval(playTimer);
         }
 
@@ -1614,24 +2199,146 @@
 
             var badge = document.getElementById('countdownBadge');
             if (diffToStart > 0) {
-                badge.innerHTML = `✈️ Départ dans <b>${diffToStart}</b> jour${diffToStart > 1 ? 's' : ''}`;
+                badge.innerHTML = `<span class="cd-k">Départ</span><span class="cd-v">dans ${diffToStart} jour${diffToStart > 1 ? 's' : ''}</span>`;
             } else if (diffToEnd >= 0) {
                 var todayIdx = timelineData.findIndex(d => d.date === todayStr);
                 badge.innerHTML = todayIdx >= 0
-                    ? `🌴 En voyage — ${timelineData[todayIdx].day}`
-                    : `🌴 En voyage`;
+                    ? `<span class="cd-k">En voyage</span><span class="cd-v">${timelineData[todayIdx].day}</span>`
+                    : `<span class="cd-k">En voyage</span>`;
             } else {
-                badge.innerHTML = `✅ Voyage terminé`;
+                badge.innerHTML = `<span class="cd-k">Voyage terminé</span>`;
             }
             badge.classList.add('visible');
         }
 
-        // Sélectionne automatiquement le jour du voyage correspondant à la date du jour
+        // Sélectionne le jour demandé par l'URL (#j8, lien partagé), sinon le jour réel du
+        // voyage si l'on y est, sinon le premier jour.
         function getInitialDayIndex() {
+            var m = (location.hash || '').match(/^#j(\d+)$/i);
+            if (m) {
+                var wanted = parseInt(m[1]) - 1;
+                if (wanted >= 0 && wanted < timelineData.length) return wanted;
+            }
             var todayStr = new Date().toISOString().substring(0, 10);
             var idx = timelineData.findIndex(d => d.date === todayStr);
             return idx >= 0 ? idx : 0;
         }
+
+        // ---------- Recherche de lieu ----------
+        var searchField = document.getElementById('searchField');
+        var searchInput = document.getElementById('placeSearch');
+        var searchResults = document.getElementById('searchResults');
+        var searchClear = document.getElementById('searchClear');
+
+        var searchIndex = [];
+        (function buildSearchIndex() {
+            var seen = {};
+            timelineData.forEach(function(d, i) {
+                (d.points || []).forEach(function(p) {
+                    var k = ptKey(p);
+                    if (seen[k]) { seen[k].days.push(d.day.split(' - ')[0]); return; }
+                    var entry = { key: k, name: p.name, dayIndex: i, days: [d.day.split(' - ')[0]], theme: d.theme, hay: deaccent(p.name + ' ' + d.theme) };
+                    seen[k] = entry;
+                    searchIndex.push(entry);
+                });
+            });
+            if (typeof sausagePoints !== 'undefined') {
+                sausagePoints.forEach(function(p) {
+                    var k = ptKey(p);
+                    if (seen[k]) return;
+                    var entry = { key: k, name: p.name, dayIndex: null, days: ['Gastronomie'], theme: 'Rougail saucisse', hay: deaccent(p.name) };
+                    seen[k] = entry;
+                    searchIndex.push(entry);
+                });
+            }
+        })();
+
+        function closeSearch() { searchResults.classList.remove('open'); searchResults.innerHTML = ''; }
+
+        function runSearch(q) {
+            var needle = deaccent(q.trim());
+            searchField.classList.toggle('filled', q.length > 0);
+            if (needle.length < 2) { closeSearch(); return; }
+            var hits = searchIndex.filter(e => e.hay.indexOf(needle) >= 0).slice(0, 8);
+            if (hits.length === 0) {
+                searchResults.innerHTML = '<div class="sr-empty">Aucun lieu ne correspond.</div>';
+            } else {
+                searchResults.innerHTML = hits.map(function(e, i) {
+                    var meta = e.days.join(', ') + ' · ' + e.theme;
+                    return '<button class="sr-item" data-hit="' + i + '"><span class="sr-name">' + escapeHtml(e.name) + '</span><span class="sr-meta">' + escapeHtml(meta) + '</span></button>';
+                }).join('');
+                searchResults.querySelectorAll('.sr-item').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var e = hits[parseInt(btn.getAttribute('data-hit'))];
+                        goToPlace(e);
+                    });
+                });
+            }
+            searchResults.classList.add('open');
+        }
+
+        async function goToPlace(entry) {
+            closeSearch();
+            searchInput.value = '';
+            searchField.classList.remove('filled');
+            if (entry.dayIndex !== null) {
+                await selectDay(entry.dayIndex, { skipPopup: true });
+            }
+            var mk = markersRegistry[entry.key];
+            if (mk) {
+                await whenMapIdle(1500);
+                var p = mk.getPopup();
+                if (p) {
+                    p.options.autoPanPaddingTopLeft = L.point(panelOffset() + 24, 120);
+                    p.options.autoPanPaddingBottomRight = L.point(24, 24);
+                }
+                mk.openPopup();
+            }
+            if (window.innerWidth <= 520) setPanel(false);
+        }
+
+        searchInput.addEventListener('input', function(e) { runSearch(e.target.value); });
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { searchInput.value = ''; closeSearch(); searchField.classList.remove('filled'); }
+            if (e.key === 'Enter') {
+                var first = searchResults.querySelector('.sr-item');
+                if (first) first.click();
+            }
+        });
+        searchClear.addEventListener('click', function() {
+            searchInput.value = ''; closeSearch(); searchField.classList.remove('filled'); searchInput.focus();
+        });
+        document.addEventListener('click', function(e) {
+            if (!searchField.contains(e.target) && !searchResults.contains(e.target)) closeSearch();
+        });
+
+        // ---------- À réserver ----------
+        function renderBookings() {
+            var items = collectBookings();
+            var section = document.getElementById('bookingSection');
+            var list = document.getElementById('bookingList');
+            var hint = document.getElementById('bookingHint');
+            if (items.length === 0) { section.style.display = 'none'; return; }
+            hint.textContent = items.length + (items.length > 1 ? ' prestations' : ' prestation');
+            list.innerHTML = items.map(function(it, i) {
+                return '<button class="booking-item" data-i="' + i + '">' +
+                    '<span class="bk-day">' + escapeHtml(it.day) + '</span>' +
+                    '<span class="bk-name">' + escapeHtml(it.name) + '</span>' +
+                    '<span class="bk-note">' + it.note + '</span></button>';
+            }).join('');
+            list.querySelectorAll('.booking-item').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var it = items[parseInt(btn.getAttribute('data-i'))];
+                    selectDay(it.dayIndex);
+                    if (window.innerWidth <= 520) setPanel(false);
+                });
+            });
+        }
+
+        window.addEventListener('hashchange', function() {
+            var idx = getInitialDayIndex();
+            if (idx !== parseInt(timeSlider.value)) selectDay(idx);
+        });
 
         // Vue d'ensemble : superpose les trajets de tous les jours sur la carte
         var overviewRouteLayer = L.layerGroup();
@@ -1640,8 +2347,18 @@
 
         function getOverviewLabel(active) {
             var isMobile = window.innerWidth <= 480;
-            if (active) return isMobile ? "❌ Quitter" : "❌ Quitter la vue d'ensemble";
-            return isMobile ? "🗺️ Vue d'ensemble" : "🗺️ Vue d'ensemble (tous les trajets)";
+            if (active) return isMobile ? "Quitter" : "Quitter la vue d'ensemble";
+            return isMobile ? "Vue d'ensemble" : "Vue d'ensemble · tous les trajets";
+        }
+
+        // "06h12" + 45 min → "06h57"
+        function addMinutes(hhmm, mins) {
+            var m = String(hhmm).match(/(\d{1,2})[h:](\d{2})/);
+            if (!m) return hhmm;
+            var total = parseInt(m[1]) * 60 + parseInt(m[2]) + mins;
+            total = ((total % 1440) + 1440) % 1440;
+            var hh = Math.floor(total / 60), mm = total % 60;
+            return (hh < 10 ? '0' : '') + hh + 'h' + (mm < 10 ? '0' : '') + mm;
         }
 
         function exitOverview() {
@@ -1658,6 +2375,14 @@
         }
 
         async function toggleOverview() {
+            // La vue d'ensemble montre tout : on rend leur pleine opacité aux marqueurs et on
+            // retire les numéros, qui n'ont de sens que pour un jour précis.
+            if (!overviewMode) {
+                Object.keys(markersRegistry).forEach(function(k) {
+                    if (markersRegistry[k].setOpacity) markersRegistry[k].setOpacity(1);
+                });
+                numberLayer.clearLayers();
+            }
             if (overviewMode) {
                 exitOverview();
                 selectDay(parseInt(timeSlider.value));
@@ -1686,7 +2411,11 @@
             map.addLayer(overviewRouteLayer);
             var allLatLngs = [];
             timelineData.forEach(d => d.points.forEach(p => allLatLngs.push([p.lat, p.lng])));
-            map.flyToBounds(L.latLngBounds(allLatLngs), { padding: [40, 40], duration: 1.0 });
+            map.flyToBounds(L.latLngBounds(allLatLngs), {
+                paddingTopLeft: L.point(panelOffset() + 40, 60),
+                paddingBottomRight: L.point(40, 40),
+                duration: 1.0
+            });
         }
 
         overviewBtn.addEventListener('click', toggleOverview);
@@ -1705,13 +2434,64 @@
         // Vue imprimable / export PDF : génère une feuille de route texte complète, avec
         // horaires quand ils sont connus. Fusionne les points géolocalisés et les activités
         // sans lieu précis (extras) dans une seule liste triée par heure (port depuis Blois).
-        function renderPrintView() {
-            var html = `<h1>🧭 Voyage Réunion & Maurice — Feuille de route</h1>`;
-            timelineData.forEach(function(d) {
-                html += `<div class="print-day">`;
-                html += `<div class="print-day-title">${d.day} — ${d.title}</div>`;
-                html += `<div class="print-day-theme">${d.theme}</div>`;
-                html += `<ul>`;
+        // URL d'itinéraire Google Maps pour la journée (départ, étapes, arrivée) : encodée dans
+        // un QR code pour lancer la navigation depuis la feuille papier, sans retaper les lieux.
+        function dayGmapsUrl(d) {
+            var pts = (d.points || []).filter(function(p) {
+                return !p.excludeFromRoute && !p.onFoot && !p.flight;
+            });
+            if (pts.length < 2) {
+                var only = pts[0] || (d.points || [])[0];
+                if (!only) return null;
+                return 'https://www.google.com/maps/search/?api=1&query=' + only.lat + ',' + only.lng;
+            }
+            var origin = pts[0], dest = pts[pts.length - 1];
+            var waypoints = pts.slice(1, -1).slice(0, 8).map(function(p) { return p.lat + ',' + p.lng; }).join('|');
+            var url = 'https://www.google.com/maps/dir/?api=1&travelmode=driving' +
+                '&origin=' + origin.lat + ',' + origin.lng +
+                '&destination=' + dest.lat + ',' + dest.lng;
+            if (waypoints) url += '&waypoints=' + encodeURIComponent(waypoints);
+            return url;
+        }
+
+        function qrUrl(target) {
+            return 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=' + encodeURIComponent(target);
+        }
+
+        async function renderPrintView() {
+            var html = '<h1>Réunion &amp; Maurice — feuille de route</h1>';
+
+            for (var i = 0; i < timelineData.length; i++) {
+                var d = timelineData[i];
+                var routes = await fetchDayRoutes(i, d.points);
+                var w = await fetchDayWeather(d.center[0], d.center[1], d.date);
+                var s = await fetchSunTimes(d.center[0], d.center[1], d.date);
+                var planB = findPlanB(i);
+                var stay = (d.points || []).filter(function(p) { return p.icon === houseIcon; }).slice(-1)[0];
+
+                var totalKm = 0, totalSec = 0;
+                routes.forEach(function(r) { totalKm += r.distance / 1000; totalSec += r.duration; });
+                var mins = Math.round(totalSec / 60);
+                var routeStr = routes.length > 0
+                    ? totalKm.toFixed(0) + ' km · ~' + (mins >= 60 ? Math.floor(mins / 60) + 'h' + (mins % 60 < 10 ? '0' : '') + (mins % 60) : mins + ' min')
+                    : 'Journée sur place';
+
+                var meta = '<span><i>Trajet</i> <b>' + routeStr + '</b></span>';
+                if (w) meta += '<span><i>Météo</i> <b>' + w.tempMin.toFixed(0) + '–' + w.tempMax.toFixed(0) + '°C</b> ' + w.label + '</span>';
+                if (s) meta += '<span><i>Soleil</i> <b>' + s.sunrise + ' → ' + s.sunset + '</b></span>';
+                if (stay) meta += '<span><i>Nuit</i> <b>' + stay.name + '</b></span>';
+
+                var gmaps = dayGmapsUrl(d);
+                var qrBlock = gmaps
+                    ? '<div class="print-qr"><img src="' + qrUrl(gmaps) + '" alt="Itinéraire Google Maps"><span>Itinéraire du jour</span></div>'
+                    : '';
+
+                html += '<div class="print-day">' +
+                    '<div class="print-head"><div class="print-head-main">' +
+                    '<div class="print-day-theme">' + d.theme + '</div>' +
+                    '<div class="print-day-title">' + d.day + ' — ' + d.title + '</div>' +
+                    '<div class="print-meta">' + meta + '</div>' +
+                    '</div>' + qrBlock + '</div><ul>';
 
                 var items = d.points.map(function(p) {
                     return { time: p.time, name: p.name, onFoot: p.onFoot };
@@ -1720,19 +2500,45 @@
                 items.sort(function(a, b) { return timeSortKey(a.time) - timeSortKey(b.time); });
 
                 items.forEach(function(item) {
-                    var timeLabel = item.time ? `<b>${item.time}</b> : ` : '';
+                    var timeLabel = item.time ? '<b>' + item.time + '</b> : ' : '';
                     var footTag = item.onFoot ? ' (accessible à pied uniquement)' : '';
-                    html += `<li${item.onFoot ? ' class="on-foot"' : ''}>${timeLabel}${item.name}${footTag}</li>`;
+                    html += '<li' + (item.onFoot ? ' class="on-foot"' : '') + '>' + timeLabel + item.name + footTag + '</li>';
                 });
 
-                html += `</ul></div>`;
-            });
-            document.getElementById('printView').innerHTML = html;
+                html += '</ul>';
+                if (planB) html += '<div class="print-planb">Plan B pluie : ' + planB.name + ' (abrité, à ' + planB.km.toFixed(0) + ' km)</div>';
+                html += '</div>';
+            }
+
+            var view = document.getElementById('printView');
+            view.innerHTML = html;
+
+            // Les QR codes doivent être chargés avant l'ouverture de la boîte d'impression,
+            // sinon les pages sortent avec des cadres vides.
+            var imgs = Array.prototype.slice.call(view.querySelectorAll('img'));
+            await Promise.race([
+                Promise.all(imgs.map(function(img) {
+                    return img.complete ? Promise.resolve() : new Promise(function(res) {
+                        img.addEventListener('load', res, { once: true });
+                        img.addEventListener('error', res, { once: true });
+                    });
+                })),
+                new Promise(function(res) { setTimeout(res, 4000); })
+            ]);
         }
 
-        document.getElementById('printBtn').addEventListener('click', function() {
-            renderPrintView();
-            window.print();
+        document.getElementById('printBtn').addEventListener('click', async function() {
+            var btn = this;
+            var label = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Préparation…';
+            try {
+                await renderPrintView();
+                window.print();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = label;
+            }
         });
 
         // Chargement initial
@@ -1741,6 +2547,8 @@
         computeHikeCount();
         computeDayCount();
         renderLegendDates();
+        prunePanelEntries();
+        renderBookings();
         updateCountdown();
         overviewBtn.innerText = getOverviewLabel(false);
     </script>
