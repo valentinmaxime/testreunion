@@ -459,6 +459,38 @@
         }
         .leaflet-control-layers-expanded label { display: flex; align-items: center; gap: 7px; padding: 3px 0; }
         .leaflet-control-layers-expanded input { accent-color: var(--accent); }
+
+        /* Bouton "Me localiser" (contrôle Leaflet, s'empile sous le zoom en haut à droite) */
+        .locate-btn { display: flex !important; align-items: center; justify-content: center; }
+        .locate-btn svg { flex-shrink: 0; }
+        .locate-btn.locating svg { animation: locate-spin 1s linear infinite; }
+        .locate-btn.active { color: var(--accent); }
+        @keyframes locate-spin { to { transform: rotate(360deg); } }
+
+        /* Marqueur "ma position" : point plein + halo qui pulse, style GPS standard */
+        .user-loc-dot { position: relative; }
+        .user-loc-dot .loc-pulse {
+            position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+            border-radius: 50%; background: var(--accent); opacity: .55;
+            animation: loc-pulse 2s ease-out infinite;
+        }
+        .user-loc-dot .loc-dot {
+            position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+            border-radius: 50%; background: var(--accent); border: 2.5px solid #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,.4);
+        }
+        @keyframes loc-pulse { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(3.4); opacity: 0; } }
+
+        /* Toast discret pour les erreurs de géolocalisation (permission refusée, GPS indisponible…) */
+        .locate-toast {
+            position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(12px);
+            background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px;
+            font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+            max-width: 86vw; text-align: center; opacity: 0; pointer-events: none;
+            transition: opacity .25s ease, transform .25s ease; z-index: 2000;
+            box-shadow: 0 12px 28px rgba(0,0,0,.35);
+        }
+        .locate-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
         .leaflet-control-attribution {
             font-family: var(--font-sans); font-size: 10px;
             background: rgba(255,253,248,.85) !important; color: var(--muted);
@@ -1221,6 +1253,104 @@
         map.createPane('indicatorPane');
         map.getPane('indicatorPane').style.zIndex = 440;
         var indicatorLayer = L.layerGroup().addTo(map);
+
+        // ---------- Ma position (géolocalisation navigateur) ----------
+        map.createPane('userLocationPane');
+        map.getPane('userLocationPane').style.zIndex = 650; // au-dessus des marqueurs d'étapes
+
+        var LocateControl = L.Control.extend({
+            options: { position: 'topright' },
+            onAdd: function() {
+                var container = L.DomUtil.create('div', 'leaflet-bar');
+                var link = L.DomUtil.create('a', 'locate-btn', container);
+                link.href = '#';
+                link.title = 'Me localiser';
+                link.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>';
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.on(link, 'click', function(e) {
+                    L.DomEvent.stop(e);
+                    toggleLocate(link);
+                });
+                return container;
+            }
+        });
+        map.addControl(new LocateControl());
+
+        var geoWatchId = null, userMarker = null, userAccuracyCircle = null;
+
+        function showLocateError(msg) {
+            var el = document.getElementById('locateToast');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'locateToast';
+                el.className = 'locate-toast';
+                document.body.appendChild(el);
+            }
+            el.textContent = msg;
+            el.classList.add('visible');
+            clearTimeout(showLocateError._t);
+            showLocateError._t = setTimeout(function() { el.classList.remove('visible'); }, 5000);
+        }
+
+        function updateUserMarker(lat, lng, acc) {
+            var latlng = [lat, lng];
+            if (!userMarker) {
+                userMarker = L.marker(latlng, {
+                    pane: 'userLocationPane',
+                    icon: L.divIcon({
+                        className: 'user-loc-dot',
+                        html: '<span class="loc-pulse"></span><span class="loc-dot"></span>',
+                        iconSize: [14, 14], iconAnchor: [7, 7]
+                    }),
+                    interactive: false
+                }).addTo(map);
+            } else {
+                userMarker.setLatLng(latlng);
+            }
+            if (!userAccuracyCircle) {
+                userAccuracyCircle = L.circle(latlng, {
+                    pane: 'userLocationPane', radius: acc, color: '#0e6b6f', weight: 1,
+                    fillColor: '#0e6b6f', fillOpacity: 0.1, opacity: 0.35
+                }).addTo(map);
+            } else {
+                userAccuracyCircle.setLatLng(latlng).setRadius(acc);
+            }
+        }
+
+        function stopLocate(btnEl) {
+            if (geoWatchId !== null) { navigator.geolocation.clearWatch(geoWatchId); geoWatchId = null; }
+            btnEl.classList.remove('locating', 'active');
+            if (userMarker) { map.removeLayer(userMarker); userMarker = null; }
+            if (userAccuracyCircle) { map.removeLayer(userAccuracyCircle); userAccuracyCircle = null; }
+        }
+
+        function toggleLocate(btnEl) {
+            if (geoWatchId !== null) { stopLocate(btnEl); return; }
+            if (!navigator.geolocation) {
+                showLocateError('Géolocalisation non prise en charge par ce navigateur.');
+                return;
+            }
+            btnEl.classList.add('locating');
+            var firstFix = true;
+            geoWatchId = navigator.geolocation.watchPosition(function(pos) {
+                btnEl.classList.remove('locating');
+                btnEl.classList.add('active');
+                var lat = pos.coords.latitude, lng = pos.coords.longitude, acc = pos.coords.accuracy || 30;
+                updateUserMarker(lat, lng, acc);
+                if (firstFix) {
+                    map.flyTo([lat, lng], Math.max(map.getZoom(), 14), { duration: 1 });
+                    firstFix = false;
+                }
+            }, function(err) {
+                var msg = err.code === 1
+                    ? "Localisation refusée : autorise l'accès à la position dans les réglages du navigateur."
+                    : err.code === 2
+                    ? 'Position indisponible (pas de signal GPS/réseau).'
+                    : 'Délai de localisation dépassé, réessaie.';
+                showLocateError(msg);
+                stopLocate(btnEl);
+            }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 });
+        }
 
         var markersRegistry = {};
 
